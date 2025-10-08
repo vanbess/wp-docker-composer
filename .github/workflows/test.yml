@@ -29,11 +29,11 @@ jobs:
     
     - name: Start Docker environment
       run: |
-        docker-compose up -d
+        docker compose up -d
         
     - name: Wait for services to be ready
       run: |
-        timeout 120 bash -c 'until docker-compose exec -T db mariadb -u root -ptest_root_pass -e "SELECT 1"; do sleep 5; done'
+        timeout 120 bash -c 'until docker compose exec -T db mariadb -u root -ptest_root_pass -e "SELECT 1"; do sleep 5; done'
         timeout 120 bash -c 'until curl -f http://localhost:8000; do sleep 5; done'
     
     - name: Test Composer script
@@ -71,7 +71,7 @@ jobs:
     
     - name: Test cleanup
       run: |
-        docker-compose down -v
+        docker compose down -v
     
     - name: Upload logs on failure
       if: failure()
