@@ -11,7 +11,7 @@ Thank you for your interest in contributing! This project aims to make WordPress
 - Include steps to reproduce the problem
 
 ### Suggesting Features
-- Open a [discussion](https://github.com/vanbess/wp-docker-composer/discussions) first
+- Open a [feature request issue](https://github.com/vanbess/wp-docker-composer/issues/new?assignees=&labels=enhancement&template=feature_request.md) using our template
 - Explain the use case and benefits
 - Consider if it fits the project's scope
 
@@ -192,8 +192,8 @@ Contributors will be:
 
 ## 📞 Getting Help
 
-- 💬 [Discussions](https://github.com/vanbess/wp-docker-composer/discussions)
-- 📧 Create an issue for bugs or questions
+- � [Create an issue](https://github.com/vanbess/wp-docker-composer/issues/new) for bugs or questions
+- � [Request features](https://github.com/vanbess/wp-docker-composer/issues/new?assignees=&labels=enhancement&template=feature_request.md) using our template
 - 📖 Check existing documentation first
 
 ## 🙏 Thank You
