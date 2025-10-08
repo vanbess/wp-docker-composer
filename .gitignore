@@ -1,0 +1,91 @@
+# Environment and secrets
+.env
+.env.local
+.env.production
+.env.staging
+
+# Composer
+/vendor/
+composer.lock
+
+# WordPress installation and uploads
+wp_data/
+!wp_data/.gitkeep
+
+# Database
+db_data/
+!db_data/.gitkeep
+
+# Backups
+backups/
+*.sql
+*.tar.gz
+
+# SSL certificates
+ssl/
+*.pem
+*.crt
+*.key
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Icon?
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+.temp/
+
+# Node.js (if using any frontend build tools)
+node_modules/
+dist/
+build/
+
+# Docker
+.dockerignore
+
+# WordPress specific
+wp_data/wp-config.php
+wp_data/.htaccess
+wp_data/sitemap.xml
+wp_data/sitemap.xml.gz
+
+# Plugin and theme development
+wp_data/wp-content/upgrade/
+wp_data/wp-content/uploads/
+wp_data/wp-content/cache/
+wp_data/wp-content/debug.log
+
+# WP-CLI
+wp-cli.local.yml

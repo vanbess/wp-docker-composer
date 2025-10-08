@@ -1,0 +1,93 @@
+services:
+  db:
+    image: mariadb:10.11  # Stable, fast MariaDB version
+    restart: unless-stopped
+    volumes:
+      - ./db_data:/var/lib/mysql
+      - ./config/mysql.cnf:/etc/mysql/conf.d/custom.cnf  # Optional custom MySQL config
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "${MYSQL_PORT}:3306"
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  wordpress:
+    image: wordpress:6.8-php8.3-apache  # Latest stable WP with PHP 8.3 for speed
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./wp_data:/var/www/html
+      - ./config/php.ini:/usr/local/etc/php/conf.d/custom.ini  # Mount custom PHP ini
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+      WORDPRESS_TABLE_PREFIX: ${WORDPRESS_TABLE_PREFIX}
+      WORDPRESS_DEBUG: ${WORDPRESS_DEBUG}
+    ports:
+      - "${WORDPRESS_PORT}:80"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: ${MYSQL_USER}
+      PMA_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "${PHPMYADMIN_PORT}:80"
+
+  composer:
+    image: composer:latest
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - ./wp_data:/app/wp_data
+    profiles:
+      - tools
+    command: install
+
+  # Optional: WP-CLI for WordPress management
+  wpcli:
+    image: wordpress:cli-php8.3
+    depends_on:
+      - db
+      - wordpress
+    volumes:
+      - ./wp_data:/var/www/html
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+    profiles:
+      - tools
+    working_dir: /var/www/html
+
+  # Optional: Redis for caching (add for speed)
+  # redis:
+  #   image: redis:alpine
+  #   restart: unless-stopped
+  #   ports:
+  #     - "6379:6379"
