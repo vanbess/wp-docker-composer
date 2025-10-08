@@ -257,6 +257,12 @@ case "${1:-help}" in
         WWW_DATA_UID=$(docker compose exec -T wordpress id -u www-data)
         WWW_DATA_GID=$(docker compose exec -T wordpress id -g www-data)
         
+        # Check if UID/GID retrieval was successful
+        if [[ -z "$WWW_DATA_UID" || -z "$WWW_DATA_GID" || ! "$WWW_DATA_UID" =~ ^[0-9]+$ || ! "$WWW_DATA_GID" =~ ^[0-9]+$ ]]; then
+            print_error "Failed to retrieve valid www-data UID/GID from the WordPress container."
+            exit 1
+        fi
+        
         print_info "Setting ownership to www-data ($WWW_DATA_UID:$WWW_DATA_GID)..."
         
         # Fix ownership recursively
