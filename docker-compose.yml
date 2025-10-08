@@ -61,6 +61,7 @@ services:
   composer:
     image: composer:latest
     working_dir: /app
+    # Don't force user to avoid file permission issues with composer.json
     volumes:
       - ./:/app
       - ./wp_data:/app/wp_data

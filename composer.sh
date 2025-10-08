@@ -33,6 +33,33 @@ print_error() {
 run_composer() {
     print_info "Running: composer $*"
     docker compose --profile tools run --rm composer "$@"
+    
+    # Auto-fix permissions after composer operations that modify files
+    case "$1" in
+        "install"|"update"|"require"|"remove")
+            print_info "Auto-fixing permissions after Composer operation..."
+            auto_fix_permissions
+            ;;
+    esac
+}
+
+# Function to automatically fix permissions (silent version)
+auto_fix_permissions() {
+    if [ -d "wp_data" ] && check_containers wordpress >/dev/null 2>&1; then
+        # Get www-data UID/GID
+        WWW_DATA_UID=$(docker compose exec -T wordpress id -u www-data 2>/dev/null)
+        WWW_DATA_GID=$(docker compose exec -T wordpress id -g www-data 2>/dev/null)
+        
+        if [ -n "$WWW_DATA_UID" ] && [ -n "$WWW_DATA_GID" ]; then
+            # Only fix ownership of composer-managed directories
+            sudo chown -R "$WWW_DATA_UID:$WWW_DATA_GID" wp_data/wp-content/plugins/ 2>/dev/null || true
+            sudo chown -R "$WWW_DATA_UID:$WWW_DATA_GID" wp_data/wp-content/themes/ 2>/dev/null || true
+            sudo find wp_data/wp-content/plugins/ -type d -exec chmod 755 {} \; 2>/dev/null || true
+            sudo find wp_data/wp-content/plugins/ -type f -exec chmod 644 {} \; 2>/dev/null || true
+            sudo find wp_data/wp-content/themes/ -type d -exec chmod 755 {} \; 2>/dev/null || true
+            sudo find wp_data/wp-content/themes/ -type f -exec chmod 644 {} \; 2>/dev/null || true
+        fi
+    fi
 }
 
 # Function to check container health
@@ -208,6 +235,56 @@ case "${1:-help}" in
         echo "Vendor directory: $(du -sh vendor/ 2>/dev/null || echo 'Not found')"
         echo "WordPress plugins: $(du -sh wp_data/wp-content/plugins/ 2>/dev/null || echo 'Not found')"
         echo "WordPress themes: $(du -sh wp_data/wp-content/themes/ 2>/dev/null || echo 'Not found')"
+        ;;
+        
+    "fix-permissions"|"permissions"|"perms")
+        print_info "Fixing WordPress file permissions..."
+        
+        # Check if wp_data directory exists
+        if [ ! -d "wp_data" ]; then
+            print_error "wp_data directory not found. Make sure WordPress is installed."
+            exit 1
+        fi
+        
+        # Get the www-data user ID from the WordPress container
+        print_info "Getting www-data user ID from WordPress container..."
+        if ! check_containers wordpress; then
+            print_error "WordPress container is not running. Please start it first with: docker compose up -d"
+            exit 1
+        fi
+        
+        # Get the UID and GID of www-data from the container
+        WWW_DATA_UID=$(docker compose exec -T wordpress id -u www-data)
+        WWW_DATA_GID=$(docker compose exec -T wordpress id -g www-data)
+        
+        # Check if UID/GID retrieval was successful
+        if [[ -z "$WWW_DATA_UID" || -z "$WWW_DATA_GID" || ! "$WWW_DATA_UID" =~ ^[0-9]+$ || ! "$WWW_DATA_GID" =~ ^[0-9]+$ ]]; then
+            print_error "Failed to retrieve valid www-data UID/GID from the WordPress container."
+            exit 1
+        fi
+        
+        print_info "Setting ownership to www-data ($WWW_DATA_UID:$WWW_DATA_GID)..."
+        
+        # Fix ownership recursively
+        sudo chown -R "$WWW_DATA_UID:$WWW_DATA_GID" wp_data/
+        
+        # Set proper permissions
+        print_info "Setting proper file permissions..."
+        sudo find wp_data/ -type d -exec chmod 755 {} \;
+        sudo find wp_data/ -type f -exec chmod 644 {} \;
+        
+        # Make wp-config.php writable for WordPress updates
+        if [ -f "wp_data/wp-config.php" ]; then
+            sudo chmod 666 wp_data/wp-config.php
+        fi
+        
+        # Make uploads directory writable
+        if [ -d "wp_data/wp-content/uploads" ]; then
+            sudo chmod -R 755 wp_data/wp-content/uploads/
+        fi
+        
+        print_success "File permissions fixed!"
+        print_info "WordPress should now be able to update plugins and themes through the admin interface."
         ;;
         
     "validate")
@@ -521,6 +598,7 @@ case "${1:-help}" in
         echo "  ./composer.sh validate                    - Validate composer.json"
         echo "  ./composer.sh clean                       - Clean and reinstall all"
         echo "  ./composer.sh doctor                      - Run diagnostics and health checks"
+        echo "  ./composer.sh fix-permissions             - Fix WordPress file permissions for web updates"
         echo ""
         echo "Plugin management:"
         echo "  ./composer.sh plugin install <name> [ver] - Install plugin from WPackagist"
