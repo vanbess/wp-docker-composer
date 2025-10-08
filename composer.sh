@@ -266,7 +266,7 @@ case "${1:-help}" in
         print_info "Setting ownership to www-data ($WWW_DATA_UID:$WWW_DATA_GID)..."
         
         # Fix ownership recursively
-        sudo chown -R $WWW_DATA_UID:$WWW_DATA_GID wp_data/
+        sudo chown -R "$WWW_DATA_UID:$WWW_DATA_GID" wp_data/
         
         # Set proper permissions
         print_info "Setting proper file permissions..."
