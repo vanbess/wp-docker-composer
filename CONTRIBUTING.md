@@ -5,13 +5,13 @@ Thank you for your interest in contributing! This project aims to make WordPress
 ## 🤝 How to Contribute
 
 ### Reporting Issues
-- Use the [issue tracker](https://github.com/your-username/wp-docker-composer/issues)
+- Use the [issue tracker](https://github.com/vanbess/wp-docker-composer/issues)
 - Search existing issues before creating a new one
 - Provide detailed information about your environment
 - Include steps to reproduce the problem
 
 ### Suggesting Features
-- Open a [discussion](https://github.com/your-username/wp-docker-composer/discussions) first
+- Open a [discussion](https://github.com/vanbess/wp-docker-composer/discussions) first
 - Explain the use case and benefits
 - Consider if it fits the project's scope
 
@@ -32,7 +32,7 @@ Thank you for your interest in contributing! This project aims to make WordPress
 ### Local Development
 ```bash
 # Fork and clone your fork
-git clone https://github.com/your-username/wp-docker-composer.git
+git clone https://github.com/vanbess/wp-docker-composer.git
 cd wp-docker-composer
 
 # Create feature branch
@@ -192,7 +192,7 @@ Contributors will be:
 
 ## 📞 Getting Help
 
-- 💬 [Discussions](https://github.com/your-username/wp-docker-composer/discussions)
+- 💬 [Discussions](https://github.com/vanbess/wp-docker-composer/discussions)
 - 📧 Create an issue for bugs or questions
 - 📖 Check existing documentation first
 
