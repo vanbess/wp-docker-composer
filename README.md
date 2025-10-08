@@ -243,6 +243,15 @@ wp-docker-paxi/
 
 ## Troubleshooting
 
+### File Permission Issues
+If you can't update plugins/themes through WordPress admin:
+```bash
+# Fix file permissions
+./composer.sh fix-permissions
+
+# Permissions are also auto-fixed after Composer operations
+```
+
 ### Reset Everything
 ```bash
 # Stop containers and remove volumes
