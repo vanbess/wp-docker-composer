@@ -50,7 +50,7 @@ auto_fix_permissions() {
         WWW_DATA_UID=$(docker compose exec -T wordpress id -u www-data 2>/dev/null)
         WWW_DATA_GID=$(docker compose exec -T wordpress id -g www-data 2>/dev/null)
         
-        if [ ! -z "$WWW_DATA_UID" ] && [ ! -z "$WWW_DATA_GID" ]; then
+        if [ -n "$WWW_DATA_UID" ] && [ -n "$WWW_DATA_GID" ]; then
             # Only fix ownership of composer-managed directories
             sudo chown -R $WWW_DATA_UID:$WWW_DATA_GID wp_data/wp-content/plugins/ 2>/dev/null || true
             sudo chown -R $WWW_DATA_UID:$WWW_DATA_GID wp_data/wp-content/themes/ 2>/dev/null || true
