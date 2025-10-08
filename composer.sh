@@ -52,8 +52,8 @@ auto_fix_permissions() {
         
         if [ -n "$WWW_DATA_UID" ] && [ -n "$WWW_DATA_GID" ]; then
             # Only fix ownership of composer-managed directories
-            sudo chown -R $WWW_DATA_UID:$WWW_DATA_GID wp_data/wp-content/plugins/ 2>/dev/null || true
-            sudo chown -R $WWW_DATA_UID:$WWW_DATA_GID wp_data/wp-content/themes/ 2>/dev/null || true
+            sudo chown -R "$WWW_DATA_UID:$WWW_DATA_GID" wp_data/wp-content/plugins/ 2>/dev/null || true
+            sudo chown -R "$WWW_DATA_UID:$WWW_DATA_GID" wp_data/wp-content/themes/ 2>/dev/null || true
             sudo find wp_data/wp-content/plugins/ -type d -exec chmod 755 {} \; 2>/dev/null || true
             sudo find wp_data/wp-content/plugins/ -type f -exec chmod 644 {} \; 2>/dev/null || true
             sudo find wp_data/wp-content/themes/ -type d -exec chmod 755 {} \; 2>/dev/null || true
