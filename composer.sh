@@ -32,7 +32,7 @@ print_error() {
 # Function to run composer commands
 run_composer() {
     print_info "Running: composer $*"
-    docker-compose --profile tools run --rm composer "$@"
+    docker compose --profile tools run --rm composer "$@"
 }
 
 # Function to check container health
@@ -40,14 +40,14 @@ check_containers() {
     local service="$1"
     if [ -z "$service" ]; then
         # Check all containers
-        if ! docker-compose ps | grep -q "Up"; then
-            print_warning "Some containers may not be running. Consider running: docker-compose up -d"
+        if ! docker compose ps | grep -q "Up"; then
+            print_warning "Some containers may not be running. Consider running: docker compose up -d"
             return 1
         fi
     else
         # Check specific service
-        if ! docker-compose ps "$service" | grep -q "Up"; then
-            print_warning "$service container is not running. Consider running: docker-compose up -d"
+        if ! docker compose ps "$service" | grep -q "Up"; then
+            print_warning "$service container is not running. Consider running: docker compose up -d"
             return 1
         fi
     fi
@@ -62,13 +62,13 @@ run_wpcli_safe() {
     print_info "Running WP-CLI command with ${timeout}s timeout: wp $command"
     
     # Check if WordPress containers are running
-    if ! docker-compose ps wordpress | grep -q "Up"; then
+    if ! docker compose ps wordpress | grep -q "Up"; then
         print_warning "WordPress container is not running. Skipping WP-CLI command."
         return 1
     fi
     
     # Run with timeout
-    if timeout $timeout docker-compose --profile tools run --rm wpcli "$@" 2>/dev/null; then
+    if timeout $timeout docker compose --profile tools run --rm wpcli "$@" 2>/dev/null; then
         return 0
     else
         print_warning "WP-CLI command timed out or failed after ${timeout}s"
@@ -79,7 +79,7 @@ run_wpcli_safe() {
 # Function to run WP-CLI commands
 run_wpcli() {
     print_info "Running: wp $*"
-    docker-compose --profile tools run --rm wpcli "$@"
+    docker compose --profile tools run --rm wpcli "$@"
 }
 
 # Main script logic
@@ -180,7 +180,7 @@ case "${1:-help}" in
         echo ""
         
         print_info "=== Container Status ==="
-        docker-compose ps
+        docker compose ps
         echo ""
         
         print_info "=== Composer Validation ==="
