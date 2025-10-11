@@ -24,14 +24,20 @@ update_wp_config_define() {
     # Check if the define already exists
     if grep -q "define.*'$define_name'" "$file"; then
         # Update existing define
-        sed -i "s/define.*'$define_name'.*$/define('$define_name', $escaped_value);/" "$file"
+        sed -i "s/define.*'$define_name'.*$/define('$define_name', $escaped_value);/" "$file" 2>/dev/null || echo "Could not update $define_name"
         echo "Updated $define_name to $define_value"
     else
         # Add new define before the "That's all" comment
-        sed -i "/\/\* That's all, stop editing/i define('$define_name', $escaped_value);" "$file"
+        sed -i "/\/\* That's all, stop editing/i define('$define_name', $escaped_value);" "$file" 2>/dev/null || echo "Could not add $define_name"
         echo "Added $define_name with value $define_value"
     fi
 }
+
+# Skip in CI environments to avoid permission issues
+if [ -n "$CI" ] || [ -n "$GITHUB_ACTIONS" ] || [ -n "$GITLAB_CI" ]; then
+    echo "CI environment detected, skipping wp-config.php customization"
+    exit 0
+fi
 
 # Wait for wp-config.php to be created by WordPress
 echo "Waiting for wp-config.php to be created..."
@@ -42,7 +48,7 @@ while [ ! -f "$WP_CONFIG_FILE" ] && [ $timeout -gt 0 ]; do
 done
 
 if [ ! -f "$WP_CONFIG_FILE" ]; then
-    echo "wp-config.php not found after waiting, will create basic debug configuration"
+    echo "wp-config.php not found after waiting, skipping customization"
     exit 0
 fi
 

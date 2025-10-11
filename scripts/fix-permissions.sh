@@ -180,6 +180,17 @@ setup_prod_permissions() {
 # Main script logic
 MODE="${1:-auto}"
 
+# Skip permissions setup in CI environments
+if [ -n "$CI" ] || [ -n "$GITHUB_ACTIONS" ] || [ -n "$GITLAB_CI" ]; then
+    log_info "CI environment detected, skipping permissions setup"
+    exit 0
+fi
+
+# Check if we have necessary permissions to modify files
+if [ "$(id -u)" -ne 0 ] && ! groups | grep -q sudo; then
+    log_warning "Limited permissions detected, some operations may be skipped"
+fi
+
 case "$MODE" in
     "dev"|"development")
         setup_dev_permissions

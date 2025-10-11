@@ -26,15 +26,25 @@ jobs:
         sed -i 's/change_this_secure_root_password/test_root_pass/g' .env
         sed -i 's/change_this_secure_password/test_wp_pass/g' .env
         sed -i 's/change_this_admin_password/test_admin_pass/g' .env
+        # Set CI-friendly user mapping (use www-data IDs)
+        echo "HOST_UID=33" >> .env
+        echo "HOST_GID=33" >> .env
+        # Set CI environment variable
+        echo "CI=true" >> .env
     
     - name: Start Docker environment
       run: |
+        # Build with CI-friendly settings
+        docker compose build --build-arg HOST_UID=33 --build-arg HOST_GID=33
         docker compose up -d
         
     - name: Wait for services to be ready
       run: |
         timeout 120 bash -c 'until docker compose exec -T db mariadb -u root -ptest_root_pass -e "SELECT 1"; do sleep 5; done'
-        timeout 120 bash -c 'until curl -f http://localhost:8000; do sleep 5; done'
+        # Wait for WordPress to be ready
+        echo "Waiting for WordPress to be ready..."
+        timeout 120 bash -c 'until curl -f http://localhost:8000 >/dev/null 2>&1; do sleep 5; done'
+        echo "WordPress is responding on port 8000"
     
     - name: Test Composer script
       run: |

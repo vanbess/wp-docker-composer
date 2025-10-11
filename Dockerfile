@@ -77,6 +77,10 @@ RUN chmod +x /usr/local/bin/customize-wp-config.sh
 COPY scripts/fix-permissions.sh /usr/local/bin/fix-permissions.sh
 RUN chmod +x /usr/local/bin/fix-permissions.sh
 
+# Copy health check script for CI
+COPY scripts/health-check.sh /usr/local/bin/health-check.sh
+RUN chmod +x /usr/local/bin/health-check.sh
+
 # Create entrypoint script that runs customizations before starting WordPress
 COPY scripts/docker-entrypoint-custom.sh /usr/local/bin/docker-entrypoint-custom.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint-custom.sh
