@@ -325,6 +325,17 @@ docker-compose up -d wordpress
 ./composer.sh install
 ```
 
+### WP-CLI Commands Hanging
+If plugin/theme removal commands hang at the "Running WP-CLI command with timeout" step, this is typically resolved by the improved timeout handling in the latest version. If issues persist:
+
+```bash
+# Force stop any hanging containers
+docker-compose --profile tools down
+
+# Try the force-remove option instead
+./composer.sh plugin force-remove plugin-name
+```
+
 ### File Permission Issues
 If you can't update plugins/themes through WordPress admin:
 ```bash

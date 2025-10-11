@@ -121,10 +121,10 @@ check_containers() {
 
 # Function to run WP-CLI commands with timeout and error handling
 run_wpcli_safe() {
-    local timeout=10
+    local timeout_duration=10
     local command="$*"
     
-    print_info "Running WP-CLI command with ${timeout}s timeout: wp $command"
+    print_info "Running WP-CLI command with ${timeout_duration}s timeout: wp $command"
     
     # Check if WordPress containers are running
     if ! docker compose ps wordpress | grep -q "Up"; then
@@ -132,13 +132,31 @@ run_wpcli_safe() {
         return 1
     fi
     
-    # Run with timeout
-    if timeout $timeout docker compose --profile tools run --rm wpcli "$@" 2>/dev/null; then
-        return 0
-    else
-        print_warning "WP-CLI command timed out or failed after ${timeout}s"
-        return 1
-    fi
+    # Run the command in background and get its PID
+    docker compose --profile tools run --rm wpcli "$@" 2>/dev/null &
+    local cmd_pid=$!
+    
+    # Wait for the command to complete or timeout
+    local count=0
+    while [ $count -lt $timeout_duration ]; do
+        if ! kill -0 $cmd_pid 2>/dev/null; then
+            # Process has finished
+            wait $cmd_pid
+            return $?
+        fi
+        sleep 1
+        count=$((count + 1))
+    done
+    
+    # Command timed out, kill it
+    print_warning "WP-CLI command timed out after ${timeout_duration}s, terminating..."
+    kill $cmd_pid 2>/dev/null || true
+    wait $cmd_pid 2>/dev/null || true
+    
+    # Also try to clean up any hanging Docker containers
+    docker compose --profile tools down wpcli 2>/dev/null || true
+    
+    return 1
 }
 
 # Function to run WP-CLI commands
