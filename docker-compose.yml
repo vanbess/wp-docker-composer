@@ -20,14 +20,13 @@ services:
       start_period: 30s
 
   wordpress:
-    image: wordpress:6.8-php8.3-apache  # Latest stable WP with PHP 8.3 for speed
+    build: .  # Use our custom Dockerfile with additional PHP extensions
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - ./wp_data:/var/www/html
-      - ./config/php.ini:/usr/local/etc/php/conf.d/custom.ini  # Mount custom PHP ini
     environment:
       WORDPRESS_DB_HOST: db
       WORDPRESS_DB_USER: ${MYSQL_USER}
