@@ -57,15 +57,33 @@ ensure_ready() {
 # Function to run composer commands
 run_composer() {
     print_info "Running: composer $*"
-    docker compose --profile tools run --rm composer "$@"
     
-    # Auto-fix permissions after composer operations that modify files
-    case "$1" in
-        "install"|"update"|"require"|"remove")
-            print_info "Auto-fixing permissions after Composer operation..."
-            auto_fix_permissions
-            ;;
-    esac
+    # In CI environments, use a more direct approach to avoid permission issues
+    if [ -n "$CI" ] || [ -n "$GITHUB_ACTIONS" ] || [ -n "$GITLAB_CI" ]; then
+        print_info "CI environment detected, using direct composer execution"
+        docker run --rm \
+            -v "$(pwd)":/app \
+            -w /app \
+            -e COMPOSER_CACHE_DIR=/tmp \
+            -e COMPOSER_ALLOW_SUPERUSER=1 \
+            composer:latest "$@" || {
+            print_warning "Composer command failed in CI environment (this may be expected)"
+            return 1
+        }
+    else
+        # Normal development/production execution
+        docker compose --profile tools run --rm composer "$@"
+    fi
+    
+    # Auto-fix permissions after composer operations that modify files (skip in CI)
+    if [ -z "$CI" ] && [ -z "$GITHUB_ACTIONS" ] && [ -z "$GITLAB_CI" ]; then
+        case "$1" in
+            "install"|"update"|"require"|"remove")
+                print_info "Auto-fixing permissions after Composer operation..."
+                auto_fix_permissions
+                ;;
+        esac
+    fi
 }
 
 # Function to automatically fix permissions (silent version)
