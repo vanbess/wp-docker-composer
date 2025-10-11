@@ -29,6 +29,31 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Function to ensure containers are ready and fix permissions
+ensure_ready() {
+    print_info "Ensuring Docker containers are ready and permissions are correct..."
+    
+    # Start containers if they're not running
+    if ! docker compose ps wordpress | grep -q "Up"; then
+        print_info "Starting WordPress containers..."
+        docker compose up -d
+        
+        # Wait for WordPress to be ready
+        print_info "Waiting for WordPress to be ready..."
+        for i in {1..30}; do
+            if docker compose exec -T wordpress curl -f http://localhost >/dev/null 2>&1; then
+                break
+            fi
+            sleep 2
+        done
+    fi
+    
+    # Always fix permissions after ensuring containers are up
+    print_info "Auto-fixing permissions..."
+    auto_fix_permissions
+    print_success "System ready!"
+}
+
 # Function to run composer commands
 run_composer() {
     print_info "Running: composer $*"
@@ -51,13 +76,23 @@ auto_fix_permissions() {
         WWW_DATA_GID=$(docker compose exec -T wordpress id -g www-data 2>/dev/null)
         
         if [ -n "$WWW_DATA_UID" ] && [ -n "$WWW_DATA_GID" ]; then
-            # Only fix ownership of composer-managed directories
-            sudo chown -R "$WWW_DATA_UID:$WWW_DATA_GID" wp_data/wp-content/plugins/ 2>/dev/null || true
-            sudo chown -R "$WWW_DATA_UID:$WWW_DATA_GID" wp_data/wp-content/themes/ 2>/dev/null || true
-            sudo find wp_data/wp-content/plugins/ -type d -exec chmod 755 {} \; 2>/dev/null || true
-            sudo find wp_data/wp-content/plugins/ -type f -exec chmod 644 {} \; 2>/dev/null || true
-            sudo find wp_data/wp-content/themes/ -type d -exec chmod 755 {} \; 2>/dev/null || true
-            sudo find wp_data/wp-content/themes/ -type f -exec chmod 644 {} \; 2>/dev/null || true
+            # Fix ownership of all WordPress content directories
+            sudo chown -R "$WWW_DATA_UID:$WWW_DATA_GID" wp_data/wp-content/ 2>/dev/null || true
+            
+            # Set proper permissions for directories and files
+            sudo find wp_data/wp-content/ -type d -exec chmod 755 {} \; 2>/dev/null || true
+            sudo find wp_data/wp-content/ -type f -exec chmod 644 {} \; 2>/dev/null || true
+            
+            # Ensure uploads directory is fully writable
+            if [ -d "wp_data/wp-content/uploads" ]; then
+                sudo chmod -R 755 wp_data/wp-content/uploads/ 2>/dev/null || true
+            fi
+            
+            # Make wp-config.php writable for WordPress updates
+            if [ -f "wp_data/wp-config.php" ]; then
+                sudo chown "$WWW_DATA_UID:$WWW_DATA_GID" wp_data/wp-config.php 2>/dev/null || true
+                sudo chmod 644 wp_data/wp-config.php 2>/dev/null || true
+            fi
         fi
     fi
 }
@@ -111,14 +146,33 @@ run_wpcli() {
 
 # Main script logic
 case "${1:-help}" in
+    "ready"|"ensure-ready")
+        ensure_ready
+        ;;
+    
+    "start"|"up")
+        print_info "Starting WordPress containers and ensuring permissions..."
+        docker compose up -d
+        
+        # Wait for containers to be healthy
+        print_info "Waiting for containers to be ready..."
+        sleep 5
+        
+        # Auto-fix permissions
+        auto_fix_permissions
+        print_success "WordPress is ready!"
+        ;;
+    
     "install"|"i")
         print_info "Installing Composer dependencies..."
+        ensure_ready
         run_composer install
         print_success "Dependencies installed successfully!"
         ;;
     
     "update"|"u")
         print_info "Updating Composer dependencies..."
+        ensure_ready
         run_composer update
         print_success "Dependencies updated successfully!"
         ;;
@@ -128,6 +182,8 @@ case "${1:-help}" in
             print_error "Package name required. Usage: ./composer.sh require wpackagist-plugin/plugin-name"
             exit 1
         fi
+        
+        ensure_ready
         
         # Check if version constraint is provided
         if [ -n "$3" ]; then
@@ -145,6 +201,7 @@ case "${1:-help}" in
             print_error "Package name required. Usage: ./composer.sh remove wpackagist-plugin/plugin-name"
             exit 1
         fi
+        ensure_ready
         print_info "Removing package: $2"
         run_composer remove "$2"
         print_success "Package $2 removed successfully!"
@@ -246,45 +303,69 @@ case "${1:-help}" in
             exit 1
         fi
         
-        # Get the www-data user ID from the WordPress container
-        print_info "Getting www-data user ID from WordPress container..."
-        if ! check_containers wordpress; then
-            print_error "WordPress container is not running. Please start it first with: docker compose up -d"
-            exit 1
+        # Ensure containers are running
+        if ! docker compose ps wordpress | grep -q "Up"; then
+            print_warning "WordPress container is not running. Starting it..."
+            docker compose up -d wordpress
+            sleep 5
         fi
         
-        # Get the UID and GID of www-data from the container
-        WWW_DATA_UID=$(docker compose exec -T wordpress id -u www-data)
-        WWW_DATA_GID=$(docker compose exec -T wordpress id -g www-data)
+        # Get the www-data user ID from the WordPress container
+        print_info "Getting www-data user ID from WordPress container..."
+        WWW_DATA_UID=$(docker compose exec -T wordpress id -u www-data 2>/dev/null)
+        WWW_DATA_GID=$(docker compose exec -T wordpress id -g www-data 2>/dev/null)
         
         # Check if UID/GID retrieval was successful
         if [[ -z "$WWW_DATA_UID" || -z "$WWW_DATA_GID" || ! "$WWW_DATA_UID" =~ ^[0-9]+$ || ! "$WWW_DATA_GID" =~ ^[0-9]+$ ]]; then
             print_error "Failed to retrieve valid www-data UID/GID from the WordPress container."
-            exit 1
+            print_info "Trying fallback approach with common www-data ID (33:33)..."
+            WWW_DATA_UID=33
+            WWW_DATA_GID=33
         fi
         
         print_info "Setting ownership to www-data ($WWW_DATA_UID:$WWW_DATA_GID)..."
         
-        # Fix ownership recursively
-        sudo chown -R "$WWW_DATA_UID:$WWW_DATA_GID" wp_data/
+        # Fix ownership recursively for WordPress content
+        sudo chown -R "$WWW_DATA_UID:$WWW_DATA_GID" wp_data/wp-content/
+        
+        # Also fix wp-config.php
+        if [ -f "wp_data/wp-config.php" ]; then
+            sudo chown "$WWW_DATA_UID:$WWW_DATA_GID" wp_data/wp-config.php
+        fi
         
         # Set proper permissions
         print_info "Setting proper file permissions..."
-        sudo find wp_data/ -type d -exec chmod 755 {} \;
-        sudo find wp_data/ -type f -exec chmod 644 {} \;
         
-        # Make wp-config.php writable for WordPress updates
-        if [ -f "wp_data/wp-config.php" ]; then
-            sudo chmod 666 wp_data/wp-config.php
-        fi
+        # WordPress content directories
+        sudo find wp_data/wp-content/ -type d -exec chmod 755 {} \;
+        sudo find wp_data/wp-content/ -type f -exec chmod 644 {} \;
         
-        # Make uploads directory writable
+        # Make uploads directory fully writable
         if [ -d "wp_data/wp-content/uploads" ]; then
             sudo chmod -R 755 wp_data/wp-content/uploads/
+            print_info "Uploads directory permissions set to 755 (writable)"
+        fi
+        
+        # Make wp-config.php appropriately writable
+        if [ -f "wp_data/wp-config.php" ]; then
+            sudo chmod 644 wp_data/wp-config.php
+            print_info "wp-config.php permissions set to 644"
+        fi
+        
+        # Create uploads directory if it doesn't exist
+        if [ ! -d "wp_data/wp-content/uploads" ]; then
+            print_info "Creating uploads directory..."
+            sudo mkdir -p wp_data/wp-content/uploads
+            sudo chown "$WWW_DATA_UID:$WWW_DATA_GID" wp_data/wp-content/uploads
+            sudo chmod 755 wp_data/wp-content/uploads
         fi
         
         print_success "File permissions fixed!"
-        print_info "WordPress should now be able to update plugins and themes through the admin interface."
+        print_info "WordPress should now be able to:"
+        print_info "  ✓ Update plugins and themes through admin interface"
+        print_info "  ✓ Upload media files"
+        print_info "  ✓ Create temporary files and cache"
+        print_info "  ✓ Generate PDFs and other dynamic content"
         ;;
         
     "validate")
@@ -318,6 +399,9 @@ case "${1:-help}" in
                     print_error "Plugin name required. Usage: ./composer.sh plugin install plugin-name [version]"
                     exit 1
                 fi
+                
+                ensure_ready
+                
                 if [ -n "$4" ]; then
                     print_info "Installing plugin via Composer: $3 with version constraint: $4"
                     run_composer require "wpackagist-plugin/$3:$4"
@@ -486,6 +570,9 @@ case "${1:-help}" in
                     print_error "Theme name required. Usage: ./composer.sh theme install theme-name [version]"
                     exit 1
                 fi
+                
+                ensure_ready
+                
                 if [ -n "$4" ]; then
                     print_info "Installing theme via Composer: $3 with version constraint: $4"
                     run_composer require "wpackagist-theme/$3:$4"
@@ -583,6 +670,11 @@ case "${1:-help}" in
     "help"|*)
         echo "WordPress Composer Management Script"
         echo ""
+        echo "Container & System commands:"
+        echo "  ./composer.sh start                       - Start containers and fix permissions"
+        echo "  ./composer.sh ready                       - Ensure containers are ready and fix permissions"
+        echo "  ./composer.sh fix-permissions             - Fix WordPress file permissions for web updates"
+        echo ""
         echo "Basic Composer commands:"
         echo "  ./composer.sh install                     - Install all dependencies"
         echo "  ./composer.sh update                      - Update all dependencies"
@@ -598,7 +690,6 @@ case "${1:-help}" in
         echo "  ./composer.sh validate                    - Validate composer.json"
         echo "  ./composer.sh clean                       - Clean and reinstall all"
         echo "  ./composer.sh doctor                      - Run diagnostics and health checks"
-        echo "  ./composer.sh fix-permissions             - Fix WordPress file permissions for web updates"
         echo ""
         echo "Plugin management:"
         echo "  ./composer.sh plugin install <name> [ver] - Install plugin from WPackagist"

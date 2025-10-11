@@ -17,10 +17,11 @@ cd wp-docker-composer
 # Copy environment file and customize
 cp .env.example .env
 
-# Start the environment
-docker-compose up -d
+# Initialize the environment (automatic setup)
+./init-wordpress.sh
 
-# Install dependencies
+# Or start manually
+docker-compose up -d
 ./composer.sh install
 
 # Access your site
@@ -32,11 +33,13 @@ open http://localhost:8000
 - **🐳 Docker-based**: Isolated, reproducible development environment
 - **📦 Composer Integration**: Professional dependency management with WPackagist
 - **🛠️ Management Script**: Easy-to-use CLI for plugin/theme operations
-- **🔄 Version Control**: Pin, upgrade, downgrade plugins and themes with ease
-- **⚡ Fast Setup**: Get running in under 5 minutes
+- **� Auto-Permissions**: Automatic file permission fixes for Docker environments
+- **�🔄 Version Control**: Pin, upgrade, downgrade plugins and themes with ease
+- **⚡ Fast Setup**: Get running in under 5 minutes with automatic initialization
 - **🛡️ Robust Error Handling**: Timeout protection and graceful fallbacks
 - **🔍 Diagnostics**: Built-in health checks and troubleshooting
 - **📚 Comprehensive Documentation**: Detailed guides and examples
+- **✅ Works Out of the Box**: No manual permission fixes needed
 
 ## 🏗️ Architecture
 
@@ -53,6 +56,7 @@ wp-docker-composer/
 ├── docker-compose.yml          # Docker services configuration
 ├── composer.json              # Composer dependencies
 ├── composer.sh                # Management CLI script
+├── init-wordpress.sh           # One-command initialization script
 ├── .env.example               # Environment template
 ├── wp_data/                   # WordPress installation
 ├── db_data/                   # Database files
@@ -62,6 +66,36 @@ wp-docker-composer/
 ├── docs/                     # Documentation
 └── scripts/                  # Utility scripts
 ```
+
+## 🔧 Automatic Permission Management
+
+One of the biggest pain points in Docker WordPress setups is file permissions. This environment **handles permissions automatically**:
+
+### What Gets Fixed Automatically
+- **File Ownership**: All WordPress files owned by `www-data` (the web server user)
+- **Directory Permissions**: Set to `755` (readable/executable by all, writable by owner)
+- **File Permissions**: Set to `644` (readable by all, writable by owner)
+- **Uploads Directory**: Fully writable for media uploads and plugin files
+- **wp-config.php**: Properly secured but updatable
+
+### When Permissions Are Fixed
+- **Automatically**: After every Composer operation (install, require, remove, etc.)
+- **On Startup**: When using `./composer.sh start` or `./init-wordpress.sh`
+- **On Demand**: Run `./composer.sh fix-permissions` anytime
+
+### Manual Permission Fixes
+```bash
+# Fix all WordPress file permissions
+./composer.sh fix-permissions
+
+# Start containers and auto-fix permissions
+./composer.sh start
+
+# Ensure everything is ready (containers + permissions)
+./composer.sh ready
+```
+
+## 📦 Plugin & Theme Management
 
 ### Install Plugins
 ```bash
