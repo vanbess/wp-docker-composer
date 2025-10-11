@@ -20,7 +20,11 @@ services:
       start_period: 30s
 
   wordpress:
-    build: .  # Use our custom Dockerfile with additional PHP extensions
+    build: 
+      context: .  # Use our custom Dockerfile with additional PHP extensions
+      args:
+        HOST_UID: ${HOST_UID:-1000}  # Pass host user ID for development
+        HOST_GID: ${HOST_GID:-1000}  # Pass host group ID for development
     restart: unless-stopped
     depends_on:
       db:
@@ -34,14 +38,6 @@ services:
       WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
       WORDPRESS_TABLE_PREFIX: ${WORDPRESS_TABLE_PREFIX}
       WORDPRESS_DEBUG: ${WORDPRESS_DEBUG}
-    ports:
-      - "${WORDPRESS_PORT}:80"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 40s
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest

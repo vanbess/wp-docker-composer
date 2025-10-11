@@ -70,30 +70,33 @@ run_composer() {
 
 # Function to automatically fix permissions (silent version)
 auto_fix_permissions() {
-    if [ -d "wp_data" ] && check_containers wordpress >/dev/null 2>&1; then
-        # Get www-data UID/GID
-        WWW_DATA_UID=$(docker compose exec -T wordpress id -u www-data 2>/dev/null)
-        WWW_DATA_GID=$(docker compose exec -T wordpress id -g www-data 2>/dev/null)
-        
-        if [ -n "$WWW_DATA_UID" ] && [ -n "$WWW_DATA_GID" ]; then
-            # Fix ownership of all WordPress content directories
-            sudo chown -R "$WWW_DATA_UID:$WWW_DATA_GID" wp_data/wp-content/ 2>/dev/null || true
+    if docker compose ps wordpress | grep -q "Up"; then
+        # Use the new intelligent permissions script in the container
+        docker compose exec -T wordpress /usr/local/bin/fix-permissions.sh auto 2>/dev/null || {
+            # Fallback to old method if new script fails
+            WWW_DATA_UID=$(docker compose exec -T wordpress id -u www-data 2>/dev/null)
+            WWW_DATA_GID=$(docker compose exec -T wordpress id -g www-data 2>/dev/null)
             
-            # Set proper permissions for directories and files
-            sudo find wp_data/wp-content/ -type d -exec chmod 755 {} \; 2>/dev/null || true
-            sudo find wp_data/wp-content/ -type f -exec chmod 644 {} \; 2>/dev/null || true
-            
-            # Ensure uploads directory is fully writable
-            if [ -d "wp_data/wp-content/uploads" ]; then
-                sudo chmod -R 755 wp_data/wp-content/uploads/ 2>/dev/null || true
+            if [ -n "$WWW_DATA_UID" ] && [ -n "$WWW_DATA_GID" ]; then
+                # Set group ownership to wpdev group (1001) or www-data group
+                sudo chgrp -R 1001 wp_data/wp-content/ 2>/dev/null || sudo chown -R "$WWW_DATA_UID:$WWW_DATA_GID" wp_data/wp-content/ 2>/dev/null || true
+                
+                # Set proper permissions for directories and files
+                sudo find wp_data/wp-content/ -type d -exec chmod 775 {} \; 2>/dev/null || true
+                sudo find wp_data/wp-content/ -type f -exec chmod 664 {} \; 2>/dev/null || true
+                
+                # Ensure uploads directory is fully writable
+                if [ -d "wp_data/wp-content/uploads" ]; then
+                    sudo chmod -R 775 wp_data/wp-content/uploads/ 2>/dev/null || true
+                fi
+                
+                # Make wp-config.php writable for WordPress updates
+                if [ -f "wp_data/wp-config.php" ]; then
+                    sudo chown "$WWW_DATA_UID:$WWW_DATA_GID" wp_data/wp-config.php 2>/dev/null || true
+                    sudo chmod 644 wp_data/wp-config.php 2>/dev/null || true
+                fi
             fi
-            
-            # Make wp-config.php writable for WordPress updates
-            if [ -f "wp_data/wp-config.php" ]; then
-                sudo chown "$WWW_DATA_UID:$WWW_DATA_GID" wp_data/wp-config.php 2>/dev/null || true
-                sudo chmod 644 wp_data/wp-config.php 2>/dev/null || true
-            fi
-        fi
+        }
     fi
 }
 
@@ -295,7 +298,7 @@ case "${1:-help}" in
         ;;
         
     "fix-permissions"|"permissions"|"perms")
-        print_info "Fixing WordPress file permissions..."
+        print_info "Fixing WordPress file permissions with intelligent shared-group approach..."
         
         # Check if wp_data directory exists
         if [ ! -d "wp_data" ]; then
@@ -310,62 +313,21 @@ case "${1:-help}" in
             sleep 5
         fi
         
-        # Get the www-data user ID from the WordPress container
-        print_info "Getting www-data user ID from WordPress container..."
-        WWW_DATA_UID=$(docker compose exec -T wordpress id -u www-data 2>/dev/null)
-        WWW_DATA_GID=$(docker compose exec -T wordpress id -g www-data 2>/dev/null)
+        # Use the new intelligent permissions script
+        print_info "Running intelligent permissions script..."
+        docker compose exec wordpress /usr/local/bin/fix-permissions.sh dev
         
-        # Check if UID/GID retrieval was successful
-        if [[ -z "$WWW_DATA_UID" || -z "$WWW_DATA_GID" || ! "$WWW_DATA_UID" =~ ^[0-9]+$ || ! "$WWW_DATA_GID" =~ ^[0-9]+$ ]]; then
-            print_error "Failed to retrieve valid www-data UID/GID from the WordPress container."
-            print_info "Trying fallback approach with common www-data ID (33:33)..."
-            WWW_DATA_UID=33
-            WWW_DATA_GID=33
-        fi
-        
-        print_info "Setting ownership to www-data ($WWW_DATA_UID:$WWW_DATA_GID)..."
-        
-        # Fix ownership recursively for WordPress content
-        sudo chown -R "$WWW_DATA_UID:$WWW_DATA_GID" wp_data/wp-content/
-        
-        # Also fix wp-config.php
-        if [ -f "wp_data/wp-config.php" ]; then
-            sudo chown "$WWW_DATA_UID:$WWW_DATA_GID" wp_data/wp-config.php
-        fi
-        
-        # Set proper permissions
-        print_info "Setting proper file permissions..."
-        
-        # WordPress content directories
-        sudo find wp_data/wp-content/ -type d -exec chmod 755 {} \;
-        sudo find wp_data/wp-content/ -type f -exec chmod 644 {} \;
-        
-        # Make uploads directory fully writable
-        if [ -d "wp_data/wp-content/uploads" ]; then
-            sudo chmod -R 755 wp_data/wp-content/uploads/
-            print_info "Uploads directory permissions set to 755 (writable)"
-        fi
-        
-        # Make wp-config.php appropriately writable
-        if [ -f "wp_data/wp-config.php" ]; then
-            sudo chmod 644 wp_data/wp-config.php
-            print_info "wp-config.php permissions set to 644"
-        fi
-        
-        # Create uploads directory if it doesn't exist
-        if [ ! -d "wp_data/wp-content/uploads" ]; then
-            print_info "Creating uploads directory..."
-            sudo mkdir -p wp_data/wp-content/uploads
-            sudo chown "$WWW_DATA_UID:$WWW_DATA_GID" wp_data/wp-content/uploads
-            sudo chmod 755 wp_data/wp-content/uploads
-        fi
-        
-        print_success "File permissions fixed!"
+        print_success "File permissions fixed with shared group approach!"
         print_info "WordPress should now be able to:"
         print_info "  ✓ Update plugins and themes through admin interface"
         print_info "  ✓ Upload media files"
         print_info "  ✓ Create temporary files and cache"
         print_info "  ✓ Generate PDFs and other dynamic content"
+        print_info ""
+        print_info "AND you should be able to:"
+        print_info "  ✓ Edit files directly on the host system"
+        print_info "  ✓ Use your IDE/editor without permission issues"
+        print_info "  ✓ Run git commands and file operations normally"
         ;;
         
     "validate")

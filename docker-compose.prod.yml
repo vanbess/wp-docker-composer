@@ -22,7 +22,11 @@ services:
       - wordpress_network
 
   wordpress:
-    build: .  # Use our custom Dockerfile with additional PHP extensions
+    build: 
+      context: .  # Use our custom Dockerfile with additional PHP extensions
+      args:
+        HOST_UID: 33  # Use www-data UID in production for security
+        HOST_GID: 33  # Use www-data GID in production for security
     restart: unless-stopped
     depends_on:
       db:

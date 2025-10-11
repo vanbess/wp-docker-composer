@@ -15,6 +15,12 @@ run_customizations() {
     # Wait a bit for WordPress to fully initialize
     sleep 5
     
+    # Run permissions setup first
+    if [ -x "/usr/local/bin/fix-permissions.sh" ]; then
+        echo "Setting up WordPress permissions..."
+        /usr/local/bin/fix-permissions.sh auto
+    fi
+    
     # Run wp-config customization in the background
     if [ -x "/usr/local/bin/customize-wp-config.sh" ]; then
         echo "Running wp-config.php customization..."

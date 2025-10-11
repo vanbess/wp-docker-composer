@@ -71,6 +71,33 @@ The implementation also includes several WordPress best practices:
   - Redis extension available for caching
   - Apache modules enabled: rewrite, expires, headers, deflate
 
+## 🎯 PERMISSIONS SOLUTION
+
+### The Problem Solved
+This setup eliminates the classic Docker permissions dilemma:
+- ❌ **WordPress-friendly permissions** → Can't edit files from host
+- ❌ **Host-friendly permissions** → WordPress can't write files
+
+### ✅ Our Solution: Shared Group Approach
+- **Shared Group**: Creates `wpdev` group that both users belong to
+- **User Mapping**: Maps your host user into the container
+- **Smart Permissions**: Uses 775/664 permissions with group write access
+- **Result**: Both WordPress AND host user can read/write files! 🎉
+
+### Quick Setup
+```bash
+# Auto-configure user mapping
+./scripts/setup-user-mapping.sh
+
+# Build with user mapping
+docker compose build
+
+# Start containers  
+docker compose up -d
+```
+
+See `PERMISSIONS_SOLUTION.md` for complete details.
+
 ## Usage
 
 ### Development Mode (Debug Enabled)
