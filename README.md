@@ -7,7 +7,7 @@ A modern, professional WordPress development environment using Docker, Composer,
 ![Composer](https://img.shields.io/badge/Composer-885630?style=for-the-badge&logo=composer&logoColor=white)
 ![PHP](https://img.shields.io/badge/PHP-777BB4?style=for-the-badge&logo=php&logoColor=white)
 
-## � Table of Contents
+## 📑 Table of Contents
 
 - [Quick Start](#-quick-start)
 - [Common Issues & Troubleshooting](#️-common-issues--troubleshooting)
@@ -20,7 +20,7 @@ A modern, professional WordPress development environment using Docker, Composer,
 - [Environment Variables](#environment-variables)
 - [Advanced Troubleshooting](#advanced-troubleshooting)
 
-## �🚀 Quick Start
+## � Quick Start
 
 ```bash
 # Clone the repository
@@ -41,7 +41,7 @@ docker compose up -d
 ./composer.sh install
 
 # Access your site
-open http://localhost:8000
+open http://localhost:8111
 ```
 
 ## ⚠️ Common Issues & Troubleshooting
@@ -161,8 +161,8 @@ docker compose up -d
 
 ### Directory Structure
 ```
-wp-docker composer/
-├── docker compose.yml          # Docker services configuration
+wp-docker-composer/
+├── docker-compose.yml          # Docker services configuration
 ├── composer.json              # Composer dependencies
 ├── composer.sh                # Management CLI script
 ├── init-wordpress.sh           # One-command initialization script
@@ -398,8 +398,8 @@ docker compose exec db bash
 ### File Structure Reference
 
 ```
-wp-docker composer/
-├── docker compose.yml     # Docker services configuration
+wp-docker-composer/
+├── docker-compose.yml     # Docker services configuration
 ├── composer.json          # Composer dependencies
 ├── composer.sh           # Helper script for Composer operations
 ├── .env                  # Environment variables
