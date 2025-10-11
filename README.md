@@ -11,7 +11,7 @@ A modern, professional WordPress development environment using Docker, Composer,
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/wp-docker-composer.git
+git clone https://github.com/vanbess/wp-docker-composer.git
 cd wp-docker-composer
 
 # Copy environment file and customize
