@@ -64,13 +64,16 @@ services:
   composer:
     image: composer:latest
     working_dir: /app
-    # Don't force user to avoid file permission issues with composer.json
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     volumes:
       - ./:/app
       - ./wp_data:/app/wp_data
+      - /tmp/composer-cache:/tmp/composer-cache
     profiles:
       - tools
-    command: install
+    environment:
+      - COMPOSER_CACHE_DIR=/tmp/composer-cache
+      - COMPOSER_ALLOW_SUPERUSER=1
 
   # Optional: WP-CLI for WordPress management
   wpcli:

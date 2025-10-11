@@ -79,6 +79,24 @@ docker-compose --profile tools down
 ./composer.sh plugin force-remove plugin-name
 ```
 
+#### Git Ownership Warnings
+If you see warnings like:
+```
+The repository at "/app" does not have the correct ownership and git refuses to use it:
+fatal: detected dubious ownership in repository at '/app'
+```
+
+This is automatically resolved in the latest version. If you still see this warning, ensure your containers are up to date:
+
+**Solution:**
+```bash
+# Rebuild composer service
+docker-compose build composer
+
+# Fix file ownership if needed
+sudo chown -R $USER:$USER composer.* vendor/
+```
+
 #### Container Build Issues
 If this is your first time running the project or you've pulled recent updates:
 

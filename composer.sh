@@ -57,7 +57,15 @@ ensure_ready() {
 # Function to run composer commands
 run_composer() {
     print_info "Running: composer $*"
-    docker compose --profile tools run --rm composer "$@"
+    
+    # Run composer with git safe directory configuration
+    docker compose --profile tools run --rm \
+        -e COMPOSER_ALLOW_SUPERUSER=1 \
+        composer sh -c "
+            git config --global --add safe.directory /app 2>/dev/null || true;
+            git config --global --add safe.directory '*' 2>/dev/null || true;
+            composer $*
+        "
     
     # Auto-fix permissions after composer operations that modify files
     case "$1" in
