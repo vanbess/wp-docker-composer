@@ -17,6 +17,9 @@ cd wp-docker-composer
 # Copy environment file and customize
 cp .env.example .env
 
+# Build containers (required for first-time setup)
+docker-compose build
+
 # Initialize the environment (automatic setup)
 ./init-wordpress.sh
 
@@ -28,18 +31,43 @@ docker-compose up -d
 open http://localhost:8000
 ```
 
+**Note:** If you encounter permission script errors, see the [Troubleshooting](#troubleshooting) section below.
+
+## ⚠️ Common Issues
+
+### First-Time Setup
+If this is your first time running the project or you've pulled recent updates, make sure to build the containers:
+
+```bash
+# Always run this for first-time setup or after pulling updates
+docker-compose build
+
+# Then proceed with normal startup
+docker-compose up -d
+./composer.sh install
+```
+
+### Permission Script Errors
+If you see `/usr/local/bin/fix-permissions.sh: no such file or directory`, you need to rebuild the WordPress container:
+
+```bash
+docker-compose build --no-cache wordpress
+docker-compose down wordpress
+docker-compose up -d wordpress
+```
+
 ## ✨ Features
 
 - **🐳 Docker-based**: Isolated, reproducible development environment
 - **📦 Composer Integration**: Professional dependency management with WPackagist
 - **🛠️ Management Script**: Easy-to-use CLI for plugin/theme operations
-- **� Auto-Permissions**: Automatic file permission fixes for Docker environments
-- **�🔄 Version Control**: Pin, upgrade, downgrade plugins and themes with ease
+- **🔧 Auto-Permissions**: Automatic file permission fixes for Docker environments
+- **🔄 Version Control**: Pin, upgrade, downgrade plugins and themes with ease
 - **⚡ Fast Setup**: Get running in under 5 minutes with automatic initialization
 - **🛡️ Robust Error Handling**: Timeout protection and graceful fallbacks
 - **🔍 Diagnostics**: Built-in health checks and troubleshooting
 - **📚 Comprehensive Documentation**: Detailed guides and examples
-- **✅ Works Out of the Box**: No manual permission fixes needed
+- **✅ Works Out of the Box**: No manual permission fixes needed (after initial container build)
 
 ## 🏗️ Architecture
 
@@ -277,6 +305,26 @@ wp-docker-paxi/
 
 ## Troubleshooting
 
+### Permission Script Not Found Error
+If you see an error like:
+```
+OCI runtime exec failed: exec failed: unable to start container process: exec: "/usr/local/bin/fix-permissions.sh": stat /usr/local/bin/fix-permissions.sh: no such file or directory: unknown
+```
+
+This means the Docker container was built before the permission script was added. **Solution:**
+
+```bash
+# Rebuild the WordPress container
+docker-compose build --no-cache wordpress
+
+# Recreate the container with the new image
+docker-compose down wordpress
+docker-compose up -d wordpress
+
+# Test that it's working
+./composer.sh install
+```
+
 ### File Permission Issues
 If you can't update plugins/themes through WordPress admin:
 ```bash
@@ -293,6 +341,9 @@ docker-compose down -v
 
 # Remove vendor directory
 rm -rf vendor/
+
+# Rebuild containers from scratch
+docker-compose build --no-cache
 
 # Start fresh
 docker-compose up -d
