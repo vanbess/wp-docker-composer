@@ -24,20 +24,20 @@ A modern, professional WordPress development environment using Docker, Composer,
 
 ```bash
 # Clone the repository
-git clone https://github.com/vanbess/wp-docker-composer.git
-cd wp-docker-composer
+git clone https://github.com/vanbess/wp-docker composer.git
+cd wp-docker composer
 
 # Copy environment file and customize
 cp .env.example .env
 
 # Build containers (required for first-time setup)
-docker-compose build
+docker compose build
 
 # Initialize the environment (automatic setup)
 ./init-wordpress.sh
 
 # Or start manually
-docker-compose up -d
+docker compose up -d
 ./composer.sh install
 
 # Access your site
@@ -57,11 +57,11 @@ OCI runtime exec failed: exec failed: unable to start container process: exec: "
 **Solution:**
 ```bash
 # Rebuild the WordPress container
-docker-compose build --no-cache wordpress
+docker compose build --no-cache wordpress
 
 # Recreate the container with the new image
-docker-compose down wordpress
-docker-compose up -d wordpress
+docker compose down wordpress
+docker compose up -d wordpress
 
 # Test that it's working
 ./composer.sh install
@@ -73,7 +73,7 @@ If plugin/theme removal commands hang at the "Running WP-CLI command with timeou
 **Solution:**
 ```bash
 # Force stop any hanging containers
-docker-compose --profile tools down
+docker compose --profile tools down
 
 # Try the force-remove option instead
 ./composer.sh plugin force-remove plugin-name
@@ -91,7 +91,7 @@ This is automatically resolved in the latest version. If you still see this warn
 **Solution:**
 ```bash
 # Rebuild composer service
-docker-compose build composer
+docker compose build composer
 
 # Fix file ownership if needed
 sudo chown -R $USER:$USER composer.* vendor/
@@ -103,10 +103,10 @@ If this is your first time running the project or you've pulled recent updates:
 **Solution:**
 ```bash
 # Always run this for first-time setup or after pulling updates
-docker-compose build
+docker compose build
 
 # Then proceed with normal startup
-docker-compose up -d
+docker compose up -d
 ./composer.sh install
 ```
 
@@ -124,16 +124,16 @@ If you can't update plugins/themes through WordPress admin:
 #### Reset Everything
 ```bash
 # Stop containers and remove volumes
-docker-compose down -v
+docker compose down -v
 
 # Remove vendor directory
 rm -rf vendor/
 
 # Rebuild containers from scratch
-docker-compose build --no-cache
+docker compose build --no-cache
 
 # Start fresh
-docker-compose up -d
+docker compose up -d
 ./composer.sh install
 ```
 
@@ -161,8 +161,8 @@ docker-compose up -d
 
 ### Directory Structure
 ```
-wp-docker-composer/
-├── docker-compose.yml          # Docker services configuration
+wp-docker composer/
+├── docker compose.yml          # Docker services configuration
 ├── composer.json              # Composer dependencies
 ├── composer.sh                # Management CLI script
 ├── init-wordpress.sh           # One-command initialization script
@@ -377,29 +377,29 @@ Edit `.env` file to customize:
 ### View Logs
 ```bash
 # WordPress logs
-docker-compose logs wordpress
+docker compose logs wordpress
 
 # Database logs
-docker-compose logs db
+docker compose logs db
 
 # All logs
-docker-compose logs
+docker compose logs
 ```
 
 ### Access Container Shell
 ```bash
 # WordPress container
-docker-compose exec wordpress bash
+docker compose exec wordpress bash
 
 # Database container
-docker-compose exec db bash
+docker compose exec db bash
 ```
 
 ### File Structure Reference
 
 ```
-wp-docker-composer/
-├── docker-compose.yml     # Docker services configuration
+wp-docker composer/
+├── docker compose.yml     # Docker services configuration
 ├── composer.json          # Composer dependencies
 ├── composer.sh           # Helper script for Composer operations
 ├── .env                  # Environment variables
