@@ -7,7 +7,20 @@ A modern, professional WordPress development environment using Docker, Composer,
 ![Composer](https://img.shields.io/badge/Composer-885630?style=for-the-badge&logo=composer&logoColor=white)
 ![PHP](https://img.shields.io/badge/PHP-777BB4?style=for-the-badge&logo=php&logoColor=white)
 
-## 🚀 Quick Start
+## � Table of Contents
+
+- [Quick Start](#-quick-start)
+- [Common Issues & Troubleshooting](#️-common-issues--troubleshooting)
+- [Features](#-features)
+- [Architecture](#️-architecture)
+- [Automatic Permission Management](#-automatic-permission-management)
+- [Plugin & Theme Management](#-plugin--theme-management)
+- [WP-CLI Commands](#wp-cli-commands)
+- [Popular Packages](#popular-packages)
+- [Environment Variables](#environment-variables)
+- [Advanced Troubleshooting](#advanced-troubleshooting)
+
+## �🚀 Quick Start
 
 ```bash
 # Clone the repository
@@ -31,13 +44,45 @@ docker-compose up -d
 open http://localhost:8000
 ```
 
-**Note:** If you encounter permission script errors, see the [Troubleshooting](#troubleshooting) section below.
+## ⚠️ Common Issues & Troubleshooting
 
-## ⚠️ Common Issues
+### First-Time Setup Issues
 
-### First-Time Setup
-If this is your first time running the project or you've pulled recent updates, make sure to build the containers:
+#### Permission Script Not Found Error
+If you see an error like:
+```
+OCI runtime exec failed: exec failed: unable to start container process: exec: "/usr/local/bin/fix-permissions.sh": stat /usr/local/bin/fix-permissions.sh: no such file or directory: unknown
+```
 
+**Solution:**
+```bash
+# Rebuild the WordPress container
+docker-compose build --no-cache wordpress
+
+# Recreate the container with the new image
+docker-compose down wordpress
+docker-compose up -d wordpress
+
+# Test that it's working
+./composer.sh install
+```
+
+#### WP-CLI Commands Hanging
+If plugin/theme removal commands hang at the "Running WP-CLI command with timeout" step:
+
+**Solution:**
+```bash
+# Force stop any hanging containers
+docker-compose --profile tools down
+
+# Try the force-remove option instead
+./composer.sh plugin force-remove plugin-name
+```
+
+#### Container Build Issues
+If this is your first time running the project or you've pulled recent updates:
+
+**Solution:**
 ```bash
 # Always run this for first-time setup or after pulling updates
 docker-compose build
@@ -47,13 +92,31 @@ docker-compose up -d
 ./composer.sh install
 ```
 
-### Permission Script Errors
-If you see `/usr/local/bin/fix-permissions.sh: no such file or directory`, you need to rebuild the WordPress container:
+### Quick Fixes
 
+#### File Permission Issues
+If you can't update plugins/themes through WordPress admin:
 ```bash
-docker-compose build --no-cache wordpress
-docker-compose down wordpress
-docker-compose up -d wordpress
+# Fix file permissions
+./composer.sh fix-permissions
+
+# Permissions are also auto-fixed after Composer operations
+```
+
+#### Reset Everything
+```bash
+# Stop containers and remove volumes
+docker-compose down -v
+
+# Remove vendor directory
+rm -rf vendor/
+
+# Rebuild containers from scratch
+docker-compose build --no-cache
+
+# Start fresh
+docker-compose up -d
+./composer.sh install
 ```
 
 ## ✨ Features
@@ -260,7 +323,9 @@ You can run any WP-CLI command using:
 ./composer.sh wp db check
 ```
 
-## Popular Plugins Available via WPackagist
+## Popular Packages
+
+### Popular Plugins Available via WPackagist
 
 - `contact-form-7` - Contact forms
 - `yoast-seo` - SEO optimization
@@ -273,7 +338,7 @@ You can run any WP-CLI command using:
 - `duplicate-post` - Duplicate posts/pages
 - `wp-super-cache` - Caching
 
-## Popular Themes Available via WPackagist
+### Popular Themes Available via WPackagist
 
 - `twentytwentyfour` - Latest default theme
 - `twentytwentythree` - Previous default theme
@@ -289,77 +354,7 @@ Edit `.env` file to customize:
 - Port numbers
 - Admin user details
 
-## File Structure
-
-```
-wp-docker-paxi/
-├── docker-compose.yml     # Docker services configuration
-├── composer.json          # Composer dependencies
-├── composer.sh           # Helper script for Composer operations
-├── .env                  # Environment variables
-├── wp_data/              # WordPress files
-├── db_data/              # Database files
-├── config/               # Configuration files
-└── vendor/               # Composer packages (auto-generated)
-```
-
-## Troubleshooting
-
-### Permission Script Not Found Error
-If you see an error like:
-```
-OCI runtime exec failed: exec failed: unable to start container process: exec: "/usr/local/bin/fix-permissions.sh": stat /usr/local/bin/fix-permissions.sh: no such file or directory: unknown
-```
-
-This means the Docker container was built before the permission script was added. **Solution:**
-
-```bash
-# Rebuild the WordPress container
-docker-compose build --no-cache wordpress
-
-# Recreate the container with the new image
-docker-compose down wordpress
-docker-compose up -d wordpress
-
-# Test that it's working
-./composer.sh install
-```
-
-### WP-CLI Commands Hanging
-If plugin/theme removal commands hang at the "Running WP-CLI command with timeout" step, this is typically resolved by the improved timeout handling in the latest version. If issues persist:
-
-```bash
-# Force stop any hanging containers
-docker-compose --profile tools down
-
-# Try the force-remove option instead
-./composer.sh plugin force-remove plugin-name
-```
-
-### File Permission Issues
-If you can't update plugins/themes through WordPress admin:
-```bash
-# Fix file permissions
-./composer.sh fix-permissions
-
-# Permissions are also auto-fixed after Composer operations
-```
-
-### Reset Everything
-```bash
-# Stop containers and remove volumes
-docker-compose down -v
-
-# Remove vendor directory
-rm -rf vendor/
-
-# Rebuild containers from scratch
-docker-compose build --no-cache
-
-# Start fresh
-docker-compose up -d
-./composer.sh install
-```
+## Advanced Troubleshooting
 
 ### View Logs
 ```bash
@@ -381,3 +376,21 @@ docker-compose exec wordpress bash
 # Database container
 docker-compose exec db bash
 ```
+
+### File Structure Reference
+
+```
+wp-docker-composer/
+├── docker-compose.yml     # Docker services configuration
+├── composer.json          # Composer dependencies
+├── composer.sh           # Helper script for Composer operations
+├── .env                  # Environment variables
+├── wp_data/              # WordPress files
+├── db_data/              # Database files
+├── config/               # Configuration files
+└── vendor/               # Composer packages (auto-generated)
+```
+
+---
+
+**Need help?** Check the troubleshooting sections above or open an issue on GitHub.
