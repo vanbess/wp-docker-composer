@@ -7,7 +7,20 @@ A modern, professional WordPress development environment using Docker, Composer,
 ![Composer](https://img.shields.io/badge/Composer-885630?style=for-the-badge&logo=composer&logoColor=white)
 ![PHP](https://img.shields.io/badge/PHP-777BB4?style=for-the-badge&logo=php&logoColor=white)
 
-## 🚀 Quick Start
+## 📑 Table of Contents
+
+- [Quick Start](#-quick-start)
+- [Common Issues & Troubleshooting](#️-common-issues--troubleshooting)
+- [Features](#-features)
+- [Architecture](#️-architecture)
+- [Automatic Permission Management](#-automatic-permission-management)
+- [Plugin & Theme Management](#-plugin--theme-management)
+- [WP-CLI Commands](#wp-cli-commands)
+- [Popular Packages](#popular-packages)
+- [Environment Variables](#environment-variables)
+- [Advanced Troubleshooting](#advanced-troubleshooting)
+
+## � Quick Start
 
 ```bash
 # Clone the repository
@@ -17,15 +30,111 @@ cd wp-docker-composer
 # Copy environment file and customize
 cp .env.example .env
 
+# Build containers (required for first-time setup)
+docker compose build
+
 # Initialize the environment (automatic setup)
 ./init-wordpress.sh
 
 # Or start manually
-docker-compose up -d
+docker compose up -d
 ./composer.sh install
 
 # Access your site
-open http://localhost:8000
+open http://localhost:8111
+```
+
+## ⚠️ Common Issues & Troubleshooting
+
+### First-Time Setup Issues
+
+#### Permission Script Not Found Error
+If you see an error like:
+```
+OCI runtime exec failed: exec failed: unable to start container process: exec: "/usr/local/bin/fix-permissions.sh": stat /usr/local/bin/fix-permissions.sh: no such file or directory: unknown
+```
+
+**Solution:**
+```bash
+# Rebuild the WordPress container
+docker compose build --no-cache wordpress
+
+# Recreate the container with the new image
+docker compose down wordpress
+docker compose up -d wordpress
+
+# Test that it's working
+./composer.sh install
+```
+
+#### WP-CLI Commands Hanging
+If plugin/theme removal commands hang at the "Running WP-CLI command with timeout" step:
+
+**Solution:**
+```bash
+# Force stop any hanging containers
+docker compose --profile tools down
+
+# Try the force-remove option instead
+./composer.sh plugin force-remove plugin-name
+```
+
+#### Git Ownership Warnings
+If you see warnings like:
+```
+The repository at "/app" does not have the correct ownership and git refuses to use it:
+fatal: detected dubious ownership in repository at '/app'
+```
+
+This is automatically resolved in the latest version. If you still see this warning, ensure your containers are up to date:
+
+**Solution:**
+```bash
+# Rebuild composer service
+docker compose build composer
+
+# Fix file ownership if needed
+sudo chown -R $USER:$USER composer.* vendor/
+```
+
+#### Container Build Issues
+If this is your first time running the project or you've pulled recent updates:
+
+**Solution:**
+```bash
+# Always run this for first-time setup or after pulling updates
+docker compose build
+
+# Then proceed with normal startup
+docker compose up -d
+./composer.sh install
+```
+
+### Quick Fixes
+
+#### File Permission Issues
+If you can't update plugins/themes through WordPress admin:
+```bash
+# Fix file permissions
+./composer.sh fix-permissions
+
+# Permissions are also auto-fixed after Composer operations
+```
+
+#### Reset Everything
+```bash
+# Stop containers and remove volumes
+docker compose down -v
+
+# Remove vendor directory
+rm -rf vendor/
+
+# Rebuild containers from scratch
+docker compose build --no-cache
+
+# Start fresh
+docker compose up -d
+./composer.sh install
 ```
 
 ## ✨ Features
@@ -33,13 +142,13 @@ open http://localhost:8000
 - **🐳 Docker-based**: Isolated, reproducible development environment
 - **📦 Composer Integration**: Professional dependency management with WPackagist
 - **🛠️ Management Script**: Easy-to-use CLI for plugin/theme operations
-- **� Auto-Permissions**: Automatic file permission fixes for Docker environments
-- **�🔄 Version Control**: Pin, upgrade, downgrade plugins and themes with ease
+- **🔧 Auto-Permissions**: Automatic file permission fixes for Docker environments
+- **🔄 Version Control**: Pin, upgrade, downgrade plugins and themes with ease
 - **⚡ Fast Setup**: Get running in under 5 minutes with automatic initialization
 - **🛡️ Robust Error Handling**: Timeout protection and graceful fallbacks
 - **🔍 Diagnostics**: Built-in health checks and troubleshooting
 - **📚 Comprehensive Documentation**: Detailed guides and examples
-- **✅ Works Out of the Box**: No manual permission fixes needed
+- **✅ Works Out of the Box**: No manual permission fixes needed (after initial container build)
 
 ## 🏗️ Architecture
 
@@ -232,7 +341,9 @@ You can run any WP-CLI command using:
 ./composer.sh wp db check
 ```
 
-## Popular Plugins Available via WPackagist
+## Popular Packages
+
+### Popular Plugins Available via WPackagist
 
 - `contact-form-7` - Contact forms
 - `yoast-seo` - SEO optimization
@@ -245,7 +356,7 @@ You can run any WP-CLI command using:
 - `duplicate-post` - Duplicate posts/pages
 - `wp-super-cache` - Caching
 
-## Popular Themes Available via WPackagist
+### Popular Themes Available via WPackagist
 
 - `twentytwentyfour` - Latest default theme
 - `twentytwentythree` - Previous default theme
@@ -261,10 +372,33 @@ Edit `.env` file to customize:
 - Port numbers
 - Admin user details
 
-## File Structure
+## Advanced Troubleshooting
+
+### View Logs
+```bash
+# WordPress logs
+docker compose logs wordpress
+
+# Database logs
+docker compose logs db
+
+# All logs
+docker compose logs
+```
+
+### Access Container Shell
+```bash
+# WordPress container
+docker compose exec wordpress bash
+
+# Database container
+docker compose exec db bash
+```
+
+### File Structure Reference
 
 ```
-wp-docker-paxi/
+wp-docker-composer/
 ├── docker-compose.yml     # Docker services configuration
 ├── composer.json          # Composer dependencies
 ├── composer.sh           # Helper script for Composer operations
@@ -275,47 +409,6 @@ wp-docker-paxi/
 └── vendor/               # Composer packages (auto-generated)
 ```
 
-## Troubleshooting
+---
 
-### File Permission Issues
-If you can't update plugins/themes through WordPress admin:
-```bash
-# Fix file permissions
-./composer.sh fix-permissions
-
-# Permissions are also auto-fixed after Composer operations
-```
-
-### Reset Everything
-```bash
-# Stop containers and remove volumes
-docker-compose down -v
-
-# Remove vendor directory
-rm -rf vendor/
-
-# Start fresh
-docker-compose up -d
-./composer.sh install
-```
-
-### View Logs
-```bash
-# WordPress logs
-docker-compose logs wordpress
-
-# Database logs
-docker-compose logs db
-
-# All logs
-docker-compose logs
-```
-
-### Access Container Shell
-```bash
-# WordPress container
-docker-compose exec wordpress bash
-
-# Database container
-docker-compose exec db bash
-```
+**Need help?** Check the troubleshooting sections above or open an issue on GitHub.
