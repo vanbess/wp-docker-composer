@@ -15,6 +15,9 @@ A modern, professional WordPress development environment using Docker, Composer,
 - [Architecture](#️-architecture)
 - [Automatic Permission Management](#-automatic-permission-management)
 - [Plugin & Theme Management](#-plugin--theme-management)
+- [Development Tools](#-development-tools)
+- [Error Filtering & Debug Management](#-error-filtering--debug-management)
+- [Must-Use Plugins](#-must-use-plugins)
 - [WP-CLI Commands](#wp-cli-commands)
 - [Popular Packages](#popular-packages)
 - [Environment Variables](#environment-variables)
@@ -327,6 +330,149 @@ One of the biggest pain points in Docker WordPress setups is file permissions. T
 # Clean and reinstall all dependencies
 ./composer.sh clean
 ```
+
+## 🛠️ Development Tools
+
+### Permission Management Script
+
+For development environments, use the enhanced permission script that provides full read/write access:
+
+```bash
+# Set development-friendly permissions
+./scripts/set-dev-permissions.sh
+```
+
+**Features:**
+- ✅ Full read/write permissions (775/664) for development work
+- ✅ Special handling for log files (666) and cache directories (777)
+- ✅ Proper ownership (www-data:werner)
+- ✅ You can edit, save, and clear debug.log and other files
+
+**vs Standard Permissions:**
+- Standard: `scripts/fix-permissions.sh` (production-ready, more restrictive)
+- Development: `scripts/set-dev-permissions.sh` (full access for dev work)
+
+### Deploy Must-Use Plugins
+
+Deploy essential mu-plugins for enhanced debugging and error handling:
+
+```bash
+# Deploy all mu-plugins to WordPress
+./scripts/deploy-mu-plugins.sh
+```
+
+This automatically copies and configures:
+
+## 🚫 Error Filtering & Debug Management
+
+The repository includes a sophisticated error filtering system to prevent debug log spam while maintaining visibility into real issues.
+
+### Features
+
+- **🔄 Duplicate Prevention**: Same error messages logged only once per 24 hours
+- **⚙️ Configurable Filtering**: Filter notices, warnings, and deprecated messages  
+- **🎯 Pattern Matching**: Blacklist/whitelist specific error patterns
+- **🧹 Automatic Cleanup**: Removes old cache entries automatically
+- **📊 Statistics**: View filtering stats via WP-CLI
+
+### Quick Setup
+
+```bash
+# Deploy the error filter system
+./scripts/deploy-mu-plugins.sh
+
+# Clear debug log to start fresh
+echo "" > wp_data/wp-content/debug.log
+
+# Set proper permissions
+./scripts/set-dev-permissions.sh
+```
+
+### Configuration
+
+Customize filtering behavior in `mu-plugins/error-filter-config.php`:
+
+```php
+# Cache duration (24 hours default)
+define('ERROR_FILTER_CACHE_DURATION', 24 * 60 * 60);
+
+# Enable/disable filtering by type
+define('ERROR_FILTER_NOTICES', true);      # Filter notices
+define('ERROR_FILTER_WARNINGS', true);     # Filter warnings  
+define('ERROR_FILTER_DEPRECATED', true);   # Filter deprecated
+
+# Custom patterns (regex)
+$ERROR_FILTER_BLACKLIST = array(
+    '/Function _load_textdomain_just_in_time was called.*incorrectly/',
+    '/Translation loading for the.*domain was triggered too early/',
+);
+```
+
+### Monitoring
+
+```bash
+# View filter statistics
+docker compose exec wordpress wp error-filter-stats
+
+# Check cache status
+ls -la wp_data/wp-content/debug-cache.json
+
+# Monitor debug log in real-time
+tail -f wp_data/wp-content/debug.log
+
+## 📦 Must-Use Plugins
+
+Must-Use Plugins (mu-plugins) are automatically loaded WordPress plugins that cannot be deactivated through the admin interface. Perfect for essential functionality.
+
+### Available MU-Plugins
+
+| Plugin | Description | Auto-Deploy |
+|--------|-------------|-------------|
+| **Custom Error Filter** | Prevents debug log spam by filtering duplicate notices/warnings | ✅ |
+| **Error Filter Config** | Configuration file for customizing error filtering behavior | ✅ |
+
+### Repository Structure
+
+```
+mu-plugins/
+├── custom-error-filter.php     # Main error handler
+├── error-filter-config.php     # Configuration settings  
+├── README.md                   # Detailed documentation
+└── [your-plugin].php           # Add custom mu-plugins here
+```
+
+### Adding Custom MU-Plugins
+
+1. **Add your plugin** to the `mu-plugins/` directory
+2. **Deploy to WordPress**: `./scripts/deploy-mu-plugins.sh`
+3. **Set permissions**: `./scripts/set-dev-permissions.sh`
+4. **Commit to repository** for team sharing
+
+### Key Benefits
+
+- **🔒 Always Active**: Cannot be accidentally deactivated
+- **⚡ Early Loading**: Loaded before regular plugins and themes
+- **👥 Team Consistency**: Shared via repository across environments
+- **🛠️ Developer Tools**: Perfect for debugging and development utilities
+
+### Usage Examples
+
+```bash
+# Deploy all mu-plugins
+./scripts/deploy-mu-plugins.sh
+
+# Add custom mu-plugin
+cp my-custom-plugin.php mu-plugins/
+./scripts/deploy-mu-plugins.sh
+
+# View deployed plugins
+ls -la wp_data/wp-content/mu-plugins/
+```
+
+**Note**: MU-plugins are loaded alphabetically by filename. Prefix with numbers for load order control (e.g., `01-critical.php`, `02-utilities.php`).
+```
+- Custom Error Filter (prevents debug log spam)
+- Error Filter Configuration (customizable settings)
 
 ## WP-CLI Commands
 
