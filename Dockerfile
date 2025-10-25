@@ -69,10 +69,6 @@ RUN if [ ${HOST_UID:-1000} -ne 33 ]; then \
 # Copy custom PHP configuration
 COPY config/php.ini /usr/local/etc/php/conf.d/custom.ini
 
-# Copy wp-config customization script
-COPY scripts/customize-wp-config.sh /usr/local/bin/customize-wp-config.sh
-RUN chmod +x /usr/local/bin/customize-wp-config.sh
-
 # Copy permissions management script
 COPY scripts/fix-permissions.sh /usr/local/bin/fix-permissions.sh
 RUN chmod +x /usr/local/bin/fix-permissions.sh
@@ -81,10 +77,5 @@ RUN chmod +x /usr/local/bin/fix-permissions.sh
 COPY scripts/health-check.sh /usr/local/bin/health-check.sh
 RUN chmod +x /usr/local/bin/health-check.sh
 
-# Create entrypoint script that runs customizations before starting WordPress
-COPY scripts/docker-entrypoint-custom.sh /usr/local/bin/docker-entrypoint-custom.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint-custom.sh
-
-# Use our custom entrypoint
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint-custom.sh"]
+# Use default WordPress entrypoint
 CMD ["apache2-foreground"]
