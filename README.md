@@ -18,6 +18,7 @@ A modern, professional WordPress development environment using Docker, Composer,
 - [Development Tools](#-development-tools)
 - [Error Filtering & Debug Management](#-error-filtering--debug-management)
 - [Must-Use Plugins](#-must-use-plugins)
+- [Backup & Restore](#-backup--restore)
 - [WP-CLI Commands](#wp-cli-commands)
 - [Popular Packages](#popular-packages)
 - [Environment Variables](#environment-variables)
@@ -52,12 +53,15 @@ open http://localhost:8111
 ### First-Time Setup Issues
 
 #### Permission Script Not Found Error
+
 If you see an error like:
+
 ```
 OCI runtime exec failed: exec failed: unable to start container process: exec: "/usr/local/bin/fix-permissions.sh": stat /usr/local/bin/fix-permissions.sh: no such file or directory: unknown
 ```
 
 **Solution:**
+
 ```bash
 # Rebuild the WordPress container
 docker compose build --no-cache wordpress
@@ -71,9 +75,11 @@ docker compose up -d wordpress
 ```
 
 #### WP-CLI Commands Hanging
+
 If plugin/theme removal commands hang at the "Running WP-CLI command with timeout" step:
 
 **Solution:**
+
 ```bash
 # Force stop any hanging containers
 docker compose --profile tools down
@@ -83,7 +89,9 @@ docker compose --profile tools down
 ```
 
 #### Git Ownership Warnings
+
 If you see warnings like:
+
 ```
 The repository at "/app" does not have the correct ownership and git refuses to use it:
 fatal: detected dubious ownership in repository at '/app'
@@ -92,6 +100,7 @@ fatal: detected dubious ownership in repository at '/app'
 This is automatically resolved in the latest version. If you still see this warning, ensure your containers are up to date:
 
 **Solution:**
+
 ```bash
 # Rebuild composer service
 docker compose build composer
@@ -101,9 +110,11 @@ sudo chown -R $USER:$USER composer.* vendor/
 ```
 
 #### Container Build Issues
+
 If this is your first time running the project or you've pulled recent updates:
 
 **Solution:**
+
 ```bash
 # Always run this for first-time setup or after pulling updates
 docker compose build
@@ -116,7 +127,9 @@ docker compose up -d
 ### Quick Fixes
 
 #### File Permission Issues
+
 If you can't update plugins/themes through WordPress admin:
+
 ```bash
 # Fix file permissions
 ./composer.sh fix-permissions
@@ -125,6 +138,7 @@ If you can't update plugins/themes through WordPress admin:
 ```
 
 #### Reset Everything
+
 ```bash
 # Stop containers and remove volumes
 docker compose down -v
@@ -156,6 +170,7 @@ docker compose up -d
 ## 🏗️ Architecture
 
 ### Services
+
 - **WordPress** (6.8 + PHP 8.3 + Apache)
 - **MariaDB** (10.11) - Fast, reliable database
 - **phpMyAdmin** - Database management interface
@@ -163,6 +178,7 @@ docker compose up -d
 - **WP-CLI** - WordPress command-line tools
 
 ### Directory Structure
+
 ```
 wp-docker-composer/
 ├── docker-compose.yml          # Docker services configuration
@@ -184,6 +200,7 @@ wp-docker-composer/
 One of the biggest pain points in Docker WordPress setups is file permissions. This environment **handles permissions automatically**:
 
 ### What Gets Fixed Automatically
+
 - **File Ownership**: All WordPress files owned by `www-data` (the web server user)
 - **Directory Permissions**: Set to `755` (readable/executable by all, writable by owner)
 - **File Permissions**: Set to `644` (readable by all, writable by owner)
@@ -191,11 +208,13 @@ One of the biggest pain points in Docker WordPress setups is file permissions. T
 - **wp-config.php**: Properly secured but updatable
 
 ### When Permissions Are Fixed
+
 - **Automatically**: After every Composer operation (install, require, remove, etc.)
 - **On Startup**: When using `./composer.sh start` or `./init-wordpress.sh`
 - **On Demand**: Run `./composer.sh fix-permissions` anytime
 
 ### Manual Permission Fixes
+
 ```bash
 # Fix all WordPress file permissions
 ./composer.sh fix-permissions
@@ -210,6 +229,7 @@ One of the biggest pain points in Docker WordPress setups is file permissions. T
 ## 📦 Plugin & Theme Management
 
 ### Install Plugins
+
 ```bash
 # Install a plugin from WPackagist
 ./composer.sh plugin install contact-form-7
@@ -221,6 +241,7 @@ One of the biggest pain points in Docker WordPress setups is file permissions. T
 ```
 
 ### Install Themes
+
 ```bash
 # Install a theme from WPackagist
 ./composer.sh theme install twentytwentyfour
@@ -231,6 +252,7 @@ One of the biggest pain points in Docker WordPress setups is file permissions. T
 ```
 
 ### Activate/Deactivate Plugins and Themes
+
 ```bash
 # Activate a plugin
 ./composer.sh plugin activate contact-form-7
@@ -249,6 +271,7 @@ One of the biggest pain points in Docker WordPress setups is file permissions. T
 ```
 
 ### Update Dependencies
+
 ```bash
 # Update all packages
 ./composer.sh update
@@ -258,6 +281,7 @@ One of the biggest pain points in Docker WordPress setups is file permissions. T
 ```
 
 ### Remove Plugins/Themes
+
 ```bash
 # Safe removal (recommended) - tries to deactivate first, has fallbacks
 ./composer.sh plugin remove contact-form-7
@@ -270,6 +294,7 @@ One of the biggest pain points in Docker WordPress setups is file permissions. T
 ```
 
 ### Troubleshooting and Diagnostics
+
 ```bash
 # Run comprehensive diagnostics
 ./composer.sh doctor
@@ -278,12 +303,14 @@ One of the biggest pain points in Docker WordPress setups is file permissions. T
 ```
 
 **Note:** The safe removal method includes:
+
 1. **Timeout protection**: WP-CLI commands timeout after 10 seconds
 2. **Graceful fallbacks**: If deactivation fails, continues with removal
 3. **Manual cleanup**: If Composer fails, attempts manual directory removal
 4. **Error handling**: Clear feedback on each step
 
 ### Version Management
+
 ```bash
 # Check available versions
 ./composer.sh plugin version wordfence
@@ -315,6 +342,7 @@ One of the biggest pain points in Docker WordPress setups is file permissions. T
 ```
 
 ### Advanced Management
+
 ```bash
 # Search for plugins/themes
 ./composer.sh plugin search security
@@ -343,12 +371,14 @@ For development environments, use the enhanced permission script that provides f
 ```
 
 **Features:**
+
 - ✅ Full read/write permissions (775/664) for development work
 - ✅ Special handling for log files (666) and cache directories (777)
-- ✅ Proper ownership (www-data:werner)
+- ✅ Proper ownership (www-data:local-user via group permissions)
 - ✅ You can edit, save, and clear debug.log and other files
 
 **vs Standard Permissions:**
+
 - Standard: `scripts/fix-permissions.sh` (production-ready, more restrictive)
 - Development: `scripts/set-dev-permissions.sh` (full access for dev work)
 
@@ -363,7 +393,60 @@ Deploy essential mu-plugins for enhanced debugging and error handling:
 
 This automatically copies and configures:
 
-## 🚫 Error Filtering & Debug Management
+## � Backup & Restore
+
+Create and restore full backups of your WordPress installation, including database, files, and configuration. Perfect for recovering from breaking changes.
+
+### Creating Backups
+
+```bash
+# Create a backup (includes database, WordPress files, and configuration)
+./scripts/backup.sh create
+
+# List all available backups
+./scripts/backup.sh list
+```
+
+**What's Included:**
+
+- Database (all tables, triggers, routines)
+- WordPress files (wp_data directory)
+- Configuration files (.env, composer.json, docker-compose.yml)
+- Backup metadata (creation date, git branch/commit, hostname)
+
+### Restoring from Backup
+
+```bash
+# List available backups to find the right one
+./scripts/backup.sh list
+
+# Restore from a specific backup
+./scripts/backup.sh restore backups/myproject_20241025_120000.tar.gz
+```
+
+⚠️ **Warning:** Restoring will overwrite your current WordPress installation and database. Always verify you have the correct backup before proceeding.
+
+### Backup Management
+
+```bash
+# Clean up backups older than 30 days (frees disk space)
+./scripts/backup.sh cleanup 30
+
+# Clean up backups older than 7 days
+./scripts/backup.sh cleanup 7
+
+# Show full help and examples
+./scripts/backup.sh help
+```
+
+**Best Practices:**
+
+- Create backups **before making major changes** (plugin/theme updates, permissions changes, etc.)
+- Run cleanup periodically to manage disk space
+- Keep important backups on external storage for safety
+- Always verify a restore worked on a test environment first
+
+## �🚫 Error Filtering & Debug Management
 
 The repository includes a sophisticated error filtering system to prevent debug log spam while maintaining visibility into real issues.
 
@@ -434,11 +517,13 @@ Must-Use Plugins (mu-plugins) are automatically loaded WordPress plugins that ca
 ### Repository Structure
 
 ```
+
 mu-plugins/
 ├── custom-error-filter.php     # Main error handler
 ├── error-filter-config.php     # Configuration settings  
 ├── README.md                   # Detailed documentation
 └── [your-plugin].php           # Add custom mu-plugins here
+
 ```
 
 ### Adding Custom MU-Plugins
@@ -470,6 +555,7 @@ ls -la wp_data/wp-content/mu-plugins/
 ```
 
 **Note**: MU-plugins are loaded alphabetically by filename. Prefix with numbers for load order control (e.g., `01-critical.php`, `02-utilities.php`).
+
 ```
 - Custom Error Filter (prevents debug log spam)
 - Error Filter Configuration (customizable settings)
@@ -513,6 +599,7 @@ You can run any WP-CLI command using:
 ## Environment Variables
 
 Edit `.env` file to customize:
+
 - Database credentials
 - WordPress debug settings
 - Port numbers
@@ -521,6 +608,7 @@ Edit `.env` file to customize:
 ## Advanced Troubleshooting
 
 ### View Logs
+
 ```bash
 # WordPress logs
 docker compose logs wordpress
@@ -533,6 +621,7 @@ docker compose logs
 ```
 
 ### Access Container Shell
+
 ```bash
 # WordPress container
 docker compose exec wordpress bash

@@ -1,62 +1,73 @@
 #!/bin/bash
 
-# Script to set full read and write permissions for wp_data directory
-# This script sets appropriate permissions for WordPress files and directories
+# Script to set full read, write, and delete permissions for wp_data directory
+# This script provides maximum access permissions for development/editing scenarios
 
-WP_DATA_DIR="/home/werner/wp-docker-123card/wp_data"
+# Detect the wp_data directory relative to this script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WP_DATA_DIR="${SCRIPT_DIR}/../wp_data"
 
-echo "Setting permissions for WordPress files and directories in: $WP_DATA_DIR"
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+log_info() {
+    echo -e "${BLUE}[DEV PERMISSIONS]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[DEV PERMISSIONS]${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[DEV PERMISSIONS]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[DEV PERMISSIONS]${NC} $1"
+}
+
+log_info "Setting FULL ACCESS permissions for WordPress files and directories"
+log_info "Target directory: $WP_DATA_DIR"
 
 # Check if the directory exists
 if [ ! -d "$WP_DATA_DIR" ]; then
-    echo "Error: Directory $WP_DATA_DIR does not exist!"
+    log_error "Directory $WP_DATA_DIR does not exist!"
     exit 1
 fi
 
 # Navigate to the wp_data directory
 cd "$WP_DATA_DIR" || exit 1
 
-echo "Setting directory permissions to 775 (rwxrwxr-x) for full access..."
-# Set directories to 775 (owner: read/write/execute, group: read/write/execute, others: read/execute)
-find . -type d -exec chmod 775 {} \;
+log_info "Setting directory permissions to 777 (rwxrwxrwx) - full access..."
+# Set all directories to 777 (owner, group, others: read/write/execute)
+# This allows deletion, modification, and creation of files
+find . -type d -exec chmod 777 {} \; 2>/dev/null || log_warning "Some directories could not be modified"
 
-echo "Setting file permissions to 664 (rw-rw-r--) for full read/write access..."
-# Set files to 664 (owner: read/write, group: read/write, others: read)
-find . -type f -exec chmod 664 {} \;
+log_info "Setting file permissions to 666 (rw-rw-rw-) - full read/write access..."
+# Set all files to 666 (owner, group, others: read/write)
+# This allows reading and modifying all files
+find . -type f -exec chmod 666 {} \; 2>/dev/null || log_warning "Some files could not be modified"
 
-echo "Setting special permissions for log files and writable files..."
-# Make sure log files are fully writable
-if [ -f "wp-content/debug.log" ]; then
-    chmod 666 wp-content/debug.log
-fi
-
-# Find and set all .log files to be writable
-find . -name "*.log" -exec chmod 666 {} \;
-
-echo "Setting permissions for wp-content and subdirectories..."
-# Set wp-content and all subdirectories to be fully writable for development
-if [ -d "wp-content" ]; then
-    chmod -R 775 wp-content
-    # Make all files in wp-content writable
-    find wp-content -type f -exec chmod 664 {} \;
-    # Make log files and cache files fully writable
-    find wp-content -name "*.log" -exec chmod 666 {} \;
-    find wp-content -name "cache" -type d -exec chmod 777 {} \;
-    find wp-content -path "*/cache/*" -exec chmod 666 {} \;
-fi
-
-echo "Setting ownership to www-data:werner..."
-# Change ownership to www-data:werner (as shown in your file listing)
-sudo chown -R www-data:werner .
-
-echo "Permissions set successfully!"
+log_success "Full access permissions applied successfully!"
 echo ""
-echo "Summary of permissions applied (Development Environment):"
-echo "- Directories: 775 (rwxrwxr-x) - full read/write/execute for owner and group"
-echo "- Files: 664 (rw-rw-r--) - full read/write for owner and group"
-echo "- Log files: 666 (rw-rw-rw-) - full read/write for everyone"
-echo "- Cache directories: 777 (rwxrwxrwx) - full access for cache operations"
-echo "- Ownership: www-data:werner"
+echo "Summary of permissions applied:"
+echo "  • Directories: 777 (rwxrwxrwx) - Everyone can read/write/execute/delete"
+echo "  • Files: 666 (rw-rw-rw-) - Everyone can read/write"
 echo ""
-echo "You should now be able to edit, save, and clear files like debug.log"
-echo "To verify permissions, run: ls -la $WP_DATA_DIR"
+echo "Features enabled:"
+echo "  ✓ Full read access to all files"
+echo "  ✓ Full write access to all files"
+echo "  ✓ Delete capability for all files and directories"
+echo "  ✓ Create new files and directories"
+echo "  ✓ Modify wp-config.php and debug.log"
+echo ""
+echo "Verification:"
+log_info "Sample file permissions:"
+ls -la "$WP_DATA_DIR" | head -10
+log_info "To verify all permissions, run: find $WP_DATA_DIR -type f -printf '%m %p\n' | head -20"
+echo ""
+log_success "Development environment is ready for full file access!"

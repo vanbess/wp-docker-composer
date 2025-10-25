@@ -129,7 +129,7 @@ docker compose exec wordpress touch /var/www/html/wp-content/wp-test.txt
 ```
 wp_data/wp-content/
 ├── owner: www-data
-├── group: werner (or wpdev)
+├── group: wpdev (shared group or local user via Docker mapping)
 ├── permissions: drwxrwsr-x (775 with sticky bit)
 └── files: -rw-rw-r-- (664)
 ```
@@ -138,7 +138,7 @@ wp_data/wp-content/
 
 ### Permission Denied Errors
 
-```bash
+````
 # Re-run permissions script
 ./composer.sh fix-permissions
 

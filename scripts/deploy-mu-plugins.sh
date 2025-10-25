@@ -40,7 +40,8 @@ if [ -d "$MU_PLUGINS_SOURCE" ]; then
     else
         echo "Setting basic permissions..."
         chmod 664 "$MU_PLUGINS_DEST"/*.php 2>/dev/null || true
-        chown www-data:werner "$MU_PLUGINS_DEST"/*.php 2>/dev/null || true
+        # Use www-data:www-data by default (or wpdev group if available)
+        chown www-data:www-data "$MU_PLUGINS_DEST"/*.php 2>/dev/null || true
     fi
     
     echo "✅ Must-Use Plugins deployed successfully!"

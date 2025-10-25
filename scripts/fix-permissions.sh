@@ -177,6 +177,30 @@ setup_prod_permissions() {
     log_success "Production permissions set - prioritizing security"
 }
 
+# Full access mode - maximum permissions for development/editing
+setup_full_access_permissions() {
+    log_info "Setting up FULL ACCESS permissions (777/666 - maximum access)..."
+    
+    if [ ! -d "$WP_ROOT" ]; then
+        log_error "WordPress root directory $WP_ROOT not found!"
+        exit 1
+    fi
+    
+    # Set all files to 666 (rw-rw-rw-)
+    log_info "Setting all files to 666 (full read/write)..."
+    find "$WP_ROOT" -type f -exec chmod 666 {} \; 2>/dev/null || log_warning "Some files could not be modified"
+    
+    # Set all directories to 777 (rwxrwxrwx)
+    log_info "Setting all directories to 777 (full read/write/execute)..."
+    find "$WP_ROOT" -type d -exec chmod 777 {} \; 2>/dev/null || log_warning "Some directories could not be modified"
+    
+    log_success "Full access permissions configured!"
+    log_info "Permissions summary:"
+    log_info "  • All files: 666 (rw-rw-rw-) - Everyone can read/write"
+    log_info "  • All directories: 777 (rwxrwxrwx) - Everyone can read/write/delete"
+    log_info "  • This is the most permissive mode for development/editing"
+}
+
 # Main script logic
 MODE="${1:-auto}"
 
@@ -197,6 +221,9 @@ case "$MODE" in
         ;;
     "prod"|"production")
         setup_prod_permissions
+        ;;
+    "full"|"full-access"|"maximum")
+        setup_full_access_permissions
         ;;
     "auto"|*)
         # Auto-detect based on environment
