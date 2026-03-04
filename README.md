@@ -15,7 +15,7 @@ A modern, professional WordPress development environment using Docker, Composer,
 - [Architecture](#️-architecture)
 - [Automatic Permission Management](#-automatic-permission-management)
 - [Plugin & Theme Management](#-plugin--theme-management)
-- [Development Tools](#-development-tools)
+- [Development Tools](#️-development-tools)
 - [Error Filtering & Debug Management](#-error-filtering--debug-management)
 - [Must-Use Plugins](#-must-use-plugins)
 - [Backup & Restore](#-backup--restore)
@@ -56,7 +56,7 @@ open http://localhost:8111
 
 If you see an error like:
 
-```
+```bash
 OCI runtime exec failed: exec failed: unable to start container process: exec: "/usr/local/bin/fix-permissions.sh": stat /usr/local/bin/fix-permissions.sh: no such file or directory: unknown
 ```
 
@@ -92,7 +92,7 @@ docker compose --profile tools down
 
 If you see warnings like:
 
-```
+```bash
 The repository at "/app" does not have the correct ownership and git refuses to use it:
 fatal: detected dubious ownership in repository at '/app'
 ```
@@ -164,6 +164,7 @@ docker compose up -d
 - **⚡ Fast Setup**: Get running in under 5 minutes with automatic initialization
 - **🛡️ Robust Error Handling**: Timeout protection and graceful fallbacks
 - **🔍 Diagnostics**: Built-in health checks and troubleshooting
+- **📧 Local Email Capture**: Mailpit inbox for safe WordPress email testing
 - **📚 Comprehensive Documentation**: Detailed guides and examples
 - **✅ Works Out of the Box**: No manual permission fixes needed (after initial container build)
 
@@ -174,12 +175,27 @@ docker compose up -d
 - **WordPress** (6.8 + PHP 8.3 + Apache)
 - **MariaDB** (10.11) - Fast, reliable database
 - **phpMyAdmin** - Database management interface
+- **Mailpit** - Local SMTP capture and web inbox for outgoing emails
 - **Composer** - Dependency management
 - **WP-CLI** - WordPress command-line tools
 
+### Email Testing
+
+WordPress outbound mail is routed to the local Mailpit SMTP service.
+
+```bash
+# Open the captured inbox UI by visiting this URL in your browser:
+# http://localhost:8025
+
+# Send a test email from WordPress
+./composer.sh wp eval 'wp_mail("dev@example.test", "Mail test", "Email transport is working.")'
+```
+
+If the message appears in Mailpit, your WordPress instance is successfully sending email.
+
 ### Directory Structure
 
-```
+```bash
 wp-docker-composer/
 ├── docker-compose.yml          # Docker services configuration
 ├── composer.json              # Composer dependencies
@@ -516,8 +532,7 @@ Must-Use Plugins (mu-plugins) are automatically loaded WordPress plugins that ca
 
 ### Repository Structure
 
-```
-
+```bash
 mu-plugins/
 ├── custom-error-filter.php     # Main error handler
 ├── error-filter-config.php     # Configuration settings  
@@ -556,11 +571,11 @@ ls -la wp_data/wp-content/mu-plugins/
 
 **Note**: MU-plugins are loaded alphabetically by filename. Prefix with numbers for load order control (e.g., `01-critical.php`, `02-utilities.php`).
 
-```
+```bash
 - Custom Error Filter (prevents debug log spam)
 - Error Filter Configuration (customizable settings)
 
-## WP-CLI Commands
+## 📋 WP-CLI Commands
 
 You can run any WP-CLI command using:
 ```bash
@@ -603,6 +618,7 @@ Edit `.env` file to customize:
 - Database credentials
 - WordPress debug settings
 - Port numbers
+- Mailpit ports (`MAILPIT_SMTP_PORT`, `MAILPIT_WEB_PORT`)
 - Admin user details
 
 ## Advanced Troubleshooting
@@ -632,7 +648,7 @@ docker compose exec db bash
 
 ### File Structure Reference
 
-```
+```bash
 wp-docker-composer/
 ├── docker-compose.yml     # Docker services configuration
 ├── composer.json          # Composer dependencies

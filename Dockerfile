@@ -22,6 +22,8 @@ RUN apt-get update && apt-get install -y \
     wget \
     curl \
     sudo \
+    msmtp \
+    msmtp-mta \
     && rm -rf /var/lib/apt/lists/*
 
 # Configure and install PHP extensions
@@ -68,6 +70,10 @@ RUN if [ ${HOST_UID:-1000} -ne 33 ]; then \
 
 # Copy custom PHP configuration
 COPY config/php.ini /usr/local/etc/php/conf.d/custom.ini
+
+# Configure msmtp so PHP mail() routes to Mailpit in local development
+COPY config/msmtprc /etc/msmtprc
+RUN chmod 640 /etc/msmtprc && chown root:mail /etc/msmtprc
 
 # Copy permissions management script
 COPY scripts/fix-permissions.sh /usr/local/bin/fix-permissions.sh

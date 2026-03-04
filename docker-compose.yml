@@ -29,6 +29,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     volumes:
       - ./wp_data:/var/www/html
     environment:
@@ -46,6 +48,14 @@ services:
       timeout: 5s
       retries: 5
       start_period: 40s
+
+  mailpit:
+    image: axllent/mailpit:latest  # Track latest Mailpit for security and bug fixes
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_WEB_PORT:-8025}:8025"
+
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest
